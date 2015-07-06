@@ -1,0 +1,11 @@
+{
+    "compilerOptions": {
+        "removeComments": false,
+        "sourceMap": true
+    },
+
+    "files": [
+        "../../src/flywheel.ts",
+        "boardtest.ts"
+    ]
+}
