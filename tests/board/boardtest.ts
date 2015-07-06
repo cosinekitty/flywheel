@@ -1,20 +1,30 @@
 module FlyBoardTest {
     export class Test {
         public static Run(): void {
+            var board:Flywheel.Board = Test.InitBoard();
+            if (!board) return;
+            if (!Test.CheckInitBoardContents(board)) return;
+            if (!Test.TestInitLegalMoves(board)) return;
+        }
+
+        private static InitBoard(): Flywheel.Board {
             // Construct a chess board object.
             let boardInitText = window.document.getElementById('BoardInitText');
             boardInitText.innerText = 'running';
             let board:Flywheel.Board = new Flywheel.Board();
             if (board.IsWhiteToMove() !== true) {
                 boardInitText.innerText = 'FAILURE: IsWhiteToMove did not return true.';
-                return;
+                return null;
             }
             if (board.IsBlackToMove() !== false) {
                 boardInitText.innerText = 'FAILURE: IsBlackToMove did not return false.';
-                return;
+                return null;
             }
             boardInitText.innerText = 'OK';
+            return board;
+        }
 
+        private static CheckInitBoardContents(board:Flywheel.Board): boolean {
             // Verify we can read the correct contents of each square.
             var boardContentsText = window.document.getElementById('BoardContentsText');
             boardContentsText.innerText = 'running';
@@ -91,11 +101,42 @@ module FlyBoardTest {
                 let testSquare:Flywheel.Square = board.GetSquare(alg);
                 if (checkSquare != testSquare) {
                     boardContentsText.innerText = 'FAILURE: Expected ' + Flywheel.Square[checkSquare] + ' in ' + alg + ' but found ' + Flywheel.Square[testSquare];
-                    return;
+                    return false;
                 }
                 ++numSquaresChecked;
             }
             boardContentsText.innerText = 'OK: checked ' + numSquaresChecked + ' squares.';
+            return true;
+        }
+
+        private static TestInitLegalMoves(board: Flywheel.Board): boolean {
+            let span = window.document.getElementById('BoardInitLegal');
+            let movelist: Flywheel.Move[] = board.LegalMoves();
+            let correctMoves = {
+                'a2a3':1, 'a2a4':1, 'b2b3':1, 'b2b4':1, 'c2c3':1, 'c2c4':1, 'd2d3':1, 'd2d4':1,
+                'e2e3':1, 'e2e4':1, 'f2f3':1, 'f2f4':1, 'g2g3':1, 'g2g4':1, 'h2h3':1, 'h2h4':1,
+                'b1a3':1, 'b1c3':1, 'g1f3':1, 'g1h3':1
+            };
+
+            var generatedMoves = {};
+            for (let i:number = 0; i < movelist.length; ++i) {
+                let alg:string = movelist[i].toString();
+                if (!correctMoves[alg]) {
+                    span.innerText = 'FAILURE: extraneous move ' + alg;
+                    return false;
+                }
+                generatedMoves[alg] = 1;
+            }
+
+            for (let alg in correctMoves) {
+                if (!generatedMoves[alg]) {
+                    span.innerText = 'FAILURE: missing move ' + alg;
+                    return false;
+                }
+            }
+
+            span.innerText = 'OK: verified ' + movelist.length + ' moves.';
+            return true;
         }
     }
 }

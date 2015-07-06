@@ -518,7 +518,7 @@ module Flywheel {
                 let source:number = Board.ValidOffsetList[i];
                 var sq:Square = this.square[source];
                 if (Utility.PieceSide[sq] === this.sideToMove) {
-                    this.addMoves[sq](movelist, source);
+                    this.addMoves[sq].call(this, movelist, source);
                 }
             }
             return movelist;
@@ -706,6 +706,10 @@ module Flywheel {
             this.sideToMove = Side.White;
             this.enemy = Side.Black;
             this.moveStack = [];
+            this.whiteCanCastleKingSide  = true;
+            this.whiteCanCastleQueenSide = true;
+            this.blackCanCastleKingSide  = true;
+            this.blackCanCastleQueenSide = true;
 
             this.square[Board.Offset('a1')] = Square.WhiteRook;
             this.square[Board.Offset('b1')] = Square.WhiteKnight;
@@ -717,9 +721,17 @@ module Flywheel {
             this.square[Board.Offset('h1')] = Square.WhiteRook;
 
             let whitePawnBase:number = Board.Offset('a2');
+            let rank3:number = Board.Offset('a3');
+            let rank4:number = Board.Offset('a4');
+            let rank5:number = Board.Offset('a5');
+            let rank6:number = Board.Offset('a6');
             let blackPawnBase:number = Board.Offset('a7');
             for (let x:number=0; x < 8; ++x) {
                 this.square[whitePawnBase + x] = Square.WhitePawn;
+                this.square[rank3 + x] = Square.Empty;
+                this.square[rank4 + x] = Square.Empty;
+                this.square[rank5 + x] = Square.Empty;
+                this.square[rank6 + x] = Square.Empty;
                 this.square[blackPawnBase + x] = Square.BlackPawn;
             }
 
