@@ -28,21 +28,8 @@
 module Flywheel {
     export enum Square {
         Empty,
-
-        WhitePawn,
-        WhiteKnight,
-        WhiteBishop,
-        WhiteRook,
-        WhiteQueen,
-        WhiteKing,
-
-        BlackPawn,
-        BlackKnight,
-        BlackBishop,
-        BlackRook,
-        BlackQueen,
-        BlackKing,
-
+        WhitePawn,  WhiteKnight,  WhiteBishop,  WhiteRook,  WhiteQueen,  WhiteKing,
+        BlackPawn,  BlackKnight,  BlackBishop,  BlackRook,  BlackQueen,  BlackKing,
         OffBoard
     }
 
