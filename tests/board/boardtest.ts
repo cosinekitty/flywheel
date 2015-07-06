@@ -5,6 +5,14 @@ module FlyBoardTest {
             let boardInitText = window.document.getElementById('BoardInitText');
             boardInitText.innerText = 'running';
             let board:Flywheel.Board = new Flywheel.Board();
+            if (board.IsWhiteToMove() !== true) {
+                boardInitText.innerText = 'FAILURE: IsWhiteToMove did not return true.';
+                return;
+            }
+            if (board.IsBlackToMove() !== false) {
+                boardInitText.innerText = 'FAILURE: IsBlackToMove did not return false.';
+                return;
+            }
             boardInitText.innerText = 'OK';
 
             // Verify we can read the correct contents of each square.

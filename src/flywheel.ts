@@ -118,7 +118,8 @@ module Flywheel {
         //-----------------------------------------------------------------------------------------------------
         // Object/member stuff
 
-        private square: Square[];   // contents of the board - see comments and diagram above
+        private whiteToMove: boolean;   // is it White's turn to move?
+        private square: Square[];       // contents of the board - see comments and diagram above
         private whiteKingOfs: number;   // the offset of the White King
         private blackKingOfs: number;   // the offset of the Black King
 
@@ -126,7 +127,20 @@ module Flywheel {
             this.Reset();
         }
 
+        public GetSquare(alg:string):Square {
+            return this.square[Board.Offset(alg)];
+        }
+
+        public IsWhiteToMove(): boolean {
+            return this.whiteToMove;
+        }
+
+        public IsBlackToMove(): boolean {
+            return !this.whiteToMove;
+        }
+
         public Reset(): void {
+            this.whiteToMove = true;
             this.square = Board.MakeEmptyBoardArray();
 
             this.square[Board.Offset('a1')] = Square.WhiteRook;
