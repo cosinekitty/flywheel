@@ -96,17 +96,6 @@ module Flywheel {
             return offsetTable;
         }
 
-        //-----------------------------------------------------------------------------------------------------
-        // Object/member stuff
-
-        private square: Square[];   // contents of the board - see comments and diagram above
-        private whiteKingOfs: number;   // the offset of the White King
-        private blackKingOfs: number;   // the offset of the Black King
-
-        public constructor() {
-            this.Reset();
-        }
-
         private static MakeEmptyBoardArray(): Square[] {
             let i: number;
             let square: Square[] = [];
@@ -124,6 +113,48 @@ module Flywheel {
                 throw "Invalid algebraic location '" + alg + "': must be 'a1'..'h8'.";
             }
             return ofs;
+        }
+
+        //-----------------------------------------------------------------------------------------------------
+        // Object/member stuff
+
+        private square: Square[];   // contents of the board - see comments and diagram above
+        private whiteKingOfs: number;   // the offset of the White King
+        private blackKingOfs: number;   // the offset of the Black King
+
+        public constructor() {
+            this.Reset();
+        }
+
+        public Reset(): void {
+            this.square = Board.MakeEmptyBoardArray();
+
+            this.square[Board.Offset('a1')] = Square.WhiteRook;
+            this.square[Board.Offset('b1')] = Square.WhiteKnight;
+            this.square[Board.Offset('c1')] = Square.WhiteBishop;
+            this.square[Board.Offset('d1')] = Square.WhiteQueen;
+            this.square[Board.Offset('e1')] = Square.WhiteKing;
+            this.square[Board.Offset('f1')] = Square.WhiteBishop;
+            this.square[Board.Offset('g1')] = Square.WhiteKnight;
+            this.square[Board.Offset('h1')] = Square.WhiteRook;
+
+            let whitePawnBase:number = Board.Offset('a2');
+            let blackPawnBase:number = Board.Offset('a7');
+            for (let x:number=0; x < 8; ++x) {
+                this.square[whitePawnBase + x] = Square.WhitePawn;
+                this.square[blackPawnBase + x] = Square.BlackPawn;
+            }
+
+            this.square[Board.Offset('a8')] = Square.BlackRook;
+            this.square[Board.Offset('b8')] = Square.BlackKnight;
+            this.square[Board.Offset('c8')] = Square.BlackBishop;
+            this.square[Board.Offset('d8')] = Square.BlackQueen;
+            this.square[Board.Offset('e8')] = Square.BlackKing;
+            this.square[Board.Offset('f8')] = Square.BlackBishop;
+            this.square[Board.Offset('g8')] = Square.BlackKnight;
+            this.square[Board.Offset('h8')] = Square.BlackRook;
+
+            this.Update();
         }
 
         private Update():void {     // Must be called after changing the internals of the board
@@ -160,37 +191,6 @@ module Flywheel {
             if (this.blackKingOfs === undefined) {
                 throw 'There is no Black King on the board.';
             }
-        }
-
-        public Reset(): void {
-            this.square = Board.MakeEmptyBoardArray();
-
-            this.square[Board.Offset('a1')] = Square.WhiteRook;
-            this.square[Board.Offset('b1')] = Square.WhiteKnight;
-            this.square[Board.Offset('c1')] = Square.WhiteBishop;
-            this.square[Board.Offset('d1')] = Square.WhiteQueen;
-            this.square[Board.Offset('e1')] = Square.WhiteKing;
-            this.square[Board.Offset('f1')] = Square.WhiteBishop;
-            this.square[Board.Offset('g1')] = Square.WhiteKnight;
-            this.square[Board.Offset('h1')] = Square.WhiteRook;
-
-            let whitePawnBase:number = Board.Offset('a2');
-            let blackPawnBase:number = Board.Offset('a7');
-            for (let x:number=0; x < 8; ++x) {
-                this.square[whitePawnBase + x] = Square.WhitePawn;
-                this.square[blackPawnBase + x] = Square.BlackPawn;
-            }
-
-            this.square[Board.Offset('a8')] = Square.BlackRook;
-            this.square[Board.Offset('b8')] = Square.BlackKnight;
-            this.square[Board.Offset('c8')] = Square.BlackBishop;
-            this.square[Board.Offset('d8')] = Square.BlackQueen;
-            this.square[Board.Offset('e8')] = Square.BlackKing;
-            this.square[Board.Offset('f8')] = Square.BlackBishop;
-            this.square[Board.Offset('g8')] = Square.BlackKnight;
-            this.square[Board.Offset('h8')] = Square.BlackRook;
-
-            this.Update();
         }
     }
 }
