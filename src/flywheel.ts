@@ -90,6 +90,7 @@ module Flywheel {
         public dest: number;            // the board offset where the piece will end up
         public prom: NeutralPiece;      // if not a pawn promotion, Empty. otherwise, the piece being promoted to
         public score: number;           // if defined, how good/bad the move is from the moving side's point of view
+        public ply: number;             // sanity check that the move pertains to the same ply counter on the board
 
         public constructor(source:number, dest:number, prom:NeutralPiece = NeutralPiece.Empty) {
             this.source = source;
@@ -278,6 +279,12 @@ module Flywheel {
             for (let i:number = 0; i < rawlist.length; ++i) {
                 // Test each move for legality by making the move and
                 // looking to see if the player who just moved is in check.
+                // Before we make a move, we have to set the move.ply
+                // to match the current number of turns that have been played
+                // on the board.  This is an inexpensive way to catch bugs
+                // where a caller tries to play a move for the wrong board position.
+                rawlist[i].ply = this.moveStack.length;
+
                 this.PushMove(rawlist[i]);
                 if (!this.IsPlayerInCheck(this.enemy)) {
                     movelist.push(rawlist[i]);
@@ -394,6 +401,15 @@ module Flywheel {
         }
 
         public PushMove(move: Move): void {
+            // Before risking corruption of the board state, verify
+            // that the move passed in pertains to the same number of turns
+            // (called "ply number") that have been applied to the board.
+            // The LegalMoves() function copies the ply number from the board
+            // position into each move it generates.
+            if (move.ply !== this.moveStack.length) {
+                throw 'Board is at ply number ' + this.moveStack.length + ' but move is for ply ' + move.ply;
+            }
+
             // Perform the state changes needed by the vast majority of moves.
             let dir:number = move.dest - move.source;
             let piece:Square = this.square[move.source];
