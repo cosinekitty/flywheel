@@ -142,6 +142,13 @@ module FlyBoardTest {
 
         private static Castling(board: Flywheel.Board): boolean {
             let span = window.document.getElementById('CastlingText');
+
+            let fen1:string = board.ForsythEdwardsNotation();
+            if (fen1 !== 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1') {
+                span.innerText = 'Incorrect starting FEN: ' + fen1;
+                return false;
+            }
+
             board.PushAlgebraic('e2e4');    // 1. e4
             board.PushAlgebraic('e7e5');    //          e5
             board.PushAlgebraic('g1f3');    // 2. Nf3
@@ -149,6 +156,12 @@ module FlyBoardTest {
             board.PushAlgebraic('f1b5');    // 3. Bb5
             board.PushAlgebraic('g8f6');    //          Nf6
             board.PushAlgebraic('e1g1');    // 4. O-O
+
+            let fen2:string = board.ForsythEdwardsNotation();
+            if (fen2 !== 'r1bqkb1r/pppp1ppp/2n2n2/1B2p3/4P3/5N2/PPPP1PPP/RNBQ1RK1 b kq - 5 4') {
+                span.innerText = 'Incorrect post-castling FEN: ' + fen2;
+                return false;
+            }
 
             span.innerText = 'OK';
             return true;

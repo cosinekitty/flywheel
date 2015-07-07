@@ -83,6 +83,26 @@ module Flywheel {
 
             return true;
         }
+
+        public static SidedPieceCharacter(p:Square):string {
+            switch (p) {
+                case Square.Empty:          return '.';
+                case Square.WhitePawn:      return 'P';
+                case Square.WhiteKnight:    return 'N';
+                case Square.WhiteBishop:    return 'B';
+                case Square.WhiteRook:      return 'R';
+                case Square.WhiteQueen:     return 'Q';
+                case Square.WhiteKing:      return 'K';
+                case Square.BlackPawn:      return 'p';
+                case Square.BlackKnight:    return 'n';
+                case Square.BlackBishop:    return 'b';
+                case Square.BlackRook:      return 'r';
+                case Square.BlackQueen:     return 'q';
+                case Square.BlackKing:      return 'k';
+                default:
+                    throw 'Invalid square contents: ' + p;
+            }
+        }
     }
 
     export class Move {
@@ -124,7 +144,9 @@ module Flywheel {
         public castlingRookSource: number;  // if castling move, where the rook came from
         public castlingRookDest: number;    // if castling move, where the rook landed
         public playerWasInCheck: boolean;
-        public constructor(move:Move, capture:Square, wkc:boolean, wqc:boolean, bkc:boolean, bqc:boolean, check:boolean) {
+        public lastCapOrPawnPly: number;
+
+        public constructor(move:Move, capture:Square, wkc:boolean, wqc:boolean, bkc:boolean, bqc:boolean, check:boolean, lastCapPawn:number) {
             this.move = move;
             this.capture = capture;
             this.whiteCanCastleKingSide = wkc;
@@ -132,6 +154,7 @@ module Flywheel {
             this.blackCanCastleKingSide = bkc;
             this.blackCanCastleQueenSide = bqc;
             this.playerWasInCheck = check;
+            this.lastCapOrPawnPly = lastCapPawn;
         }
     }
 
@@ -251,6 +274,7 @@ module Flywheel {
         private currentPlayerInCheck: boolean;
         private addMoves: { [square:number]: (movelist:Move[], source:number) => void };      // table of move generator functions for each kind of piece
         private moveStack: MoveState[];
+        private lastCapOrPawnPly: number;
 
         public constructor() {
             this.Init();
@@ -425,17 +449,27 @@ module Flywheel {
                 this.whiteCanCastleQueenSide,
                 this.blackCanCastleKingSide,
                 this.blackCanCastleQueenSide,
-                this.currentPlayerInCheck);
+                this.currentPlayerInCheck,
+                this.lastCapOrPawnPly);
 
             this.moveStack.push(info);
+
+            if (capture !== Square.Empty) {
+                // Update the halfmove clock on any capture.
+                this.lastCapOrPawnPly = move.ply;
+            }
 
             // Now check for the special cases: castling, en passant, pawn promotion.
             if (move.prom !== NeutralPiece.Empty) {
                 // Pawn promotion. Override what we put in the destination square.
                 this.square[move.dest] = Utility.SidePieces[this.sideToMove][move.prom];
+                // A pawn is moving, so update the halfmove clock.
+                this.lastCapOrPawnPly = move.ply;
             } else {
                 let neutralPiece:NeutralPiece = Utility.Neutral[piece];
                 if (neutralPiece === NeutralPiece.Pawn) {
+                    // A pawn is moving, so update the halfmove clock.
+                    this.lastCapOrPawnPly = move.ply;
                     // Is this an en passant capture?
                     if (capture === Square.Empty) {
                         if (dir === Direction.NorthEast || dir === Direction.SouthEast) {
@@ -526,6 +560,9 @@ module Flywheel {
 
             // Restore any knowledge we might have had about the player being in check.
             this.currentPlayerInCheck = info.playerWasInCheck;
+
+            // Put the pawn/capture halfmove clock back where it was.
+            this.lastCapOrPawnPly = info.lastCapOrPawnPly;
 
             if (info.move.prom === NeutralPiece.Empty) {
                 // This move is NOT a pawn promotion.
@@ -797,6 +834,7 @@ module Flywheel {
             this.sideToMove = Side.White;
             this.enemy = Side.Black;
             this.moveStack = [];
+            this.lastCapOrPawnPly = -1;
             this.whiteCanCastleKingSide  = true;
             this.whiteCanCastleQueenSide = true;
             this.blackCanCastleKingSide  = true;
@@ -872,6 +910,152 @@ module Flywheel {
             if (this.blackKingOfs === undefined) {
                 throw 'There is no Black King on the board.';
             }
+        }
+
+        public ForsythEdwardsNotation(): string {
+            let fen:string = '';
+
+            /*
+                http://kirill-kryukov.com/chess/doc/fen.html
+
+                16.1.3.1: Piece placement data
+
+                The first field represents the placement of the pieces on the board.  The board
+                contents are specified starting with the eighth rank and ending with the first
+                rank.  For each rank, the squares are specified from file a to file h.  White
+                pieces are identified by uppercase SAN piece letters ("PNBRQK") and black
+                pieces are identified by lowercase SAN piece letters ("pnbrqk").  Empty squares
+                are represented by the digits one through eight; the digit used represents the
+                count of contiguous empty squares along a rank.  A solidus character "/" is
+                used to separate data of adjacent ranks.
+            */
+
+            for (let y:number = 7; y >= 0; --y) {
+                let emptyCount:number = 0;
+                for (let x:number = 0; x <= 7; ++x) {
+                    let ofs:number = 21 + x + (10*y);
+                    let piece:Square = this.square[ofs];
+                    if (piece === Square.Empty) {
+                        ++emptyCount;
+                    } else {
+                        if (emptyCount > 0) {
+                            fen += emptyCount.toFixed();
+                            emptyCount = 0;
+                        }
+                        fen += Utility.SidedPieceCharacter(piece);
+                    }
+                }
+                if (emptyCount > 0) {
+                    fen += emptyCount.toFixed();
+                }
+                if (y > 0) {
+                    fen += '/'
+                }
+            }
+
+            /*
+                16.1.3.2: Active color
+
+                The second field represents the active color.  A lower case "w" is used if
+                White is to move; a lower case "b" is used if Black is the active player.
+            */
+            fen += (this.sideToMove === Side.White) ? ' w ' : ' b ';
+
+            /*
+                16.1.3.3: Castling availability
+
+                The third field represents castling availability.  This indicates potential
+                future castling that may of may not be possible at the moment due to blocking
+                pieces or enemy attacks.  If there is no castling availability for either side,
+                the single character symbol "-" is used.  Otherwise, a combination of from one
+                to four characters are present.  If White has kingside castling availability,
+                the uppercase letter "K" appears.  If White has queenside castling
+                availability, the uppercase letter "Q" appears.  If Black has kingside castling
+                availability, the lowercase letter "k" appears.  If Black has queenside
+                castling availability, then the lowercase letter "q" appears.  Those letters
+                which appear will be ordered first uppercase before lowercase and second
+                kingside before queenside.  There is no white space between the letters.
+            */
+            let castling:number = 0;
+            if (this.whiteCanCastleKingSide) {
+                fen += 'K';
+                ++castling;
+            }
+
+            if (this.whiteCanCastleQueenSide) {
+                fen += 'Q';
+                ++castling;
+            }
+
+            if (this.blackCanCastleKingSide) {
+                fen += 'k';
+                ++castling;
+            }
+
+            if (this.blackCanCastleQueenSide) {
+                fen += 'q';
+                ++castling;
+            }
+
+            if (castling === 0) {
+                fen += '-';
+            }
+
+            fen += ' ';
+
+            /*
+                16.1.3.4: En passant target square
+
+                The fourth field is the en passant target square.  If there is no en passant
+                target square then the single character symbol "-" appears.  If there is an en
+                passant target square then is represented by a lowercase file character
+                immediately followed by a rank digit.  Obviously, the rank digit will be "3"
+                following a white pawn double advance (Black is the active color) or else be
+                the digit "6" after a black pawn double advance (White being the active color).
+
+                An en passant target square is given if and only if the last move was a pawn
+                advance of two squares.  Therefore, an en passant target square field may have
+                a square name even if there is no pawn of the opposing side that may
+                immediately execute the en passant capture.
+            */
+            let found_ep_target:boolean = false;
+            if (this.moveStack.length > 0) {
+                let prev:Move = this.moveStack[this.moveStack.length - 1].move;
+                let dir:number = prev.dest - prev.source;
+                if ((this.square[prev.dest] === Square.WhitePawn) && (dir === 2 * Direction.North)) {
+                    // A white pawn was just pushed 2 squares forward.
+                    found_ep_target = true;
+                    fen += Board.AlgTable[prev.source + Direction.North];
+                } else if ((this.square[prev.dest] === Square.BlackPawn) && (dir === 2 * Direction.South)) {
+                    found_ep_target = true;
+                    fen += Board.AlgTable[prev.source + Direction.South];
+                }
+            }
+
+            if (!found_ep_target) {
+                fen += '-';
+            }
+
+            /*
+                16.1.3.5: Halfmove clock
+
+                The fifth field is a nonnegative integer representing the halfmove clock.
+                This number is the count of halfmoves (or ply) since the last pawn advance or
+                capturing move.  This value is used for the fifty move draw rule.
+            */
+            let quietPlies:number = this.moveStack.length - this.lastCapOrPawnPly - 1;
+            fen += ' ' + quietPlies.toFixed() + ' ';
+
+            /*
+                16.1.3.6: Fullmove number
+
+                The sixth and last field is a positive integer that gives the fullmove number.
+                This will have the value "1" for the first move of a game for both White and
+                Black.  It is incremented by one immediately after each move by Black.
+            */
+            fen += (1 + (this.moveStack.length >> 1)).toFixed();
+
+            return fen;
         }
     }
 }
