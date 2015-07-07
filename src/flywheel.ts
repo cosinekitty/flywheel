@@ -916,7 +916,7 @@ module Flywheel {
             let fen:string = '';
 
             /*
-                http://kirill-kryukov.com/chess/doc/fen.html
+                http://www.thechessdrum.net/PGN_Reference.txt
 
                 16.1.3.1: Piece placement data
 
