@@ -86,10 +86,10 @@ module Flywheel {
     }
 
     export class Move {
-        public source: number;      // the board offset of the piece being moved
-        public dest: number;        // the board offset where the piece will end up
-        public prom: NeutralPiece;  // if not a pawn promotion, Empty. otherwise, the piece being promoted to
-        public score: number;       // if defined, how good/bad the move is from the moving side's point of view
+        public source: number;          // the board offset of the piece being moved
+        public dest: number;            // the board offset where the piece will end up
+        public prom: NeutralPiece;      // if not a pawn promotion, Empty. otherwise, the piece being promoted to
+        public score: number;           // if defined, how good/bad the move is from the moving side's point of view
 
         public constructor(source:number, dest:number, prom:NeutralPiece = NeutralPiece.Empty) {
             this.source = source;
@@ -122,13 +122,15 @@ module Flywheel {
         public epCaptureOffset: number;     // if the move was an en passant capture, where the pawn was removed
         public castlingRookSource: number;  // if castling move, where the rook came from
         public castlingRookDest: number;    // if castling move, where the rook landed
-        public constructor(move:Move, capture:Square, wkc:boolean, wqc:boolean, bkc:boolean, bqc:boolean) {
+        public playerWasInCheck: boolean;
+        public constructor(move:Move, capture:Square, wkc:boolean, wqc:boolean, bkc:boolean, bqc:boolean, check:boolean) {
             this.move = move;
             this.capture = capture;
             this.whiteCanCastleKingSide = wkc;
             this.whiteCanCastleQueenSide = wqc;
             this.blackCanCastleKingSide = bkc;
             this.blackCanCastleQueenSide = bqc;
+            this.playerWasInCheck = check;
         }
     }
 
@@ -240,11 +242,12 @@ module Flywheel {
         private enemy: Side;            // the opponent of the side whose turn it is (cached for speed)
         private square: Square[];       // contents of the board - see comments and diagram above
         private whiteKingOfs: number;   // the offset of the White King
+        private blackKingOfs: number;   // the offset of the Black King
         private whiteCanCastleKingSide: boolean;
         private whiteCanCastleQueenSide: boolean;
         private blackCanCastleKingSide: boolean;
         private blackCanCastleQueenSide: boolean;
-        private blackKingOfs: number;   // the offset of the Black King
+        private currentPlayerInCheck: boolean;
         private addMoves: { [square:number]: (movelist:Move[], source:number) => void };      // table of move generator functions for each kind of piece
         private moveStack: MoveState[];
 
@@ -276,7 +279,7 @@ module Flywheel {
                 // Test each move for legality by making the move and
                 // looking to see if the player who just moved is in check.
                 this.PushMove(rawlist[i]);
-                if (!this.PlayerMovedIntoCheck()) {
+                if (!this.IsPlayerInCheck(this.enemy)) {
                     movelist.push(rawlist[i]);
                 }
                 this.PopMove();
@@ -284,11 +287,18 @@ module Flywheel {
             return movelist;
         }
 
-        private PlayerMovedIntoCheck(): boolean {
-            if (this.sideToMove === Side.White) {
-                return this.IsAttackedByWhite(this.blackKingOfs);
-            } else {
+        public IsCurrentPlayerInCheck():boolean {
+            if (this.currentPlayerInCheck === undefined) {
+                this.currentPlayerInCheck = this.IsPlayerInCheck(this.sideToMove);
+            }
+            return this.currentPlayerInCheck;
+        }
+
+        private IsPlayerInCheck(side:Side): boolean {
+            if (side === Side.White) {
                 return this.IsAttackedByBlack(this.whiteKingOfs);
+            } else {
+                return this.IsAttackedByWhite(this.blackKingOfs);
             }
         }
 
@@ -370,6 +380,19 @@ module Flywheel {
             return (this.square[ofs] === piece1) || (this.square[ofs] === piece2);
         }
 
+        public PushAlgebraic(alg: string, legal:Move[] = undefined): void {
+            if (legal === undefined) {
+                legal = this.LegalMoves();
+            }
+            for (let i:number = 0; i < legal.length; ++i) {
+                if (legal[i].toString() === alg) {
+                    this.PushMove(legal[i]);
+                    return;
+                }
+            }
+            throw 'Not a legal move: "' + alg + '"';
+        }
+
         public PushMove(move: Move): void {
             // Perform the state changes needed by the vast majority of moves.
             let dir:number = move.dest - move.source;
@@ -385,7 +408,8 @@ module Flywheel {
                 this.whiteCanCastleKingSide,
                 this.whiteCanCastleQueenSide,
                 this.blackCanCastleKingSide,
-                this.blackCanCastleQueenSide);
+                this.blackCanCastleQueenSide,
+                this.currentPlayerInCheck);
 
             this.moveStack.push(info);
 
@@ -483,6 +507,9 @@ module Flywheel {
             this.whiteCanCastleQueenSide = info.whiteCanCastleQueenSide;
             this.blackCanCastleKingSide  = info.blackCanCastleKingSide;
             this.blackCanCastleQueenSide = info.blackCanCastleQueenSide;
+
+            // Restore any knowledge we might have had about the player being in check.
+            this.currentPlayerInCheck = info.playerWasInCheck;
 
             if (info.move.prom === NeutralPiece.Empty) {
                 // This move is NOT a pawn promotion.
@@ -654,6 +681,54 @@ module Flywheel {
         }
 
         private AddMoves_King(movelist:Move[], source:number):void {
+            let canCastleKingSide: boolean;
+            let canCastleQueenSide: boolean;
+            if (this.sideToMove === Side.White) {
+                canCastleKingSide = this.whiteCanCastleKingSide &&
+                    (this.square[26] === Square.Empty) &&
+                    (this.square[27] === Square.Empty) &&
+                    !this.IsAttackedByBlack(26);
+
+                canCastleQueenSide = this.whiteCanCastleQueenSide &&
+                    (this.square[24] === Square.Empty) &&
+                    (this.square[23] === Square.Empty) &&
+                    (this.square[22] === Square.Empty) &&
+                    !this.IsAttackedByBlack(24);
+
+                if (canCastleKingSide || canCastleQueenSide) {
+                    if (!this.IsCurrentPlayerInCheck()) {
+                        if (canCastleKingSide) {
+                            movelist.push(new Move(25, 27));
+                        }
+                        if (canCastleQueenSide) {
+                            movelist.push(new Move(25, 23));
+                        }
+                    }
+                }
+            } else {
+                canCastleKingSide = this.blackCanCastleKingSide &&
+                    (this.square[96] === Square.Empty) &&
+                    (this.square[97] === Square.Empty) &&
+                    !this.IsAttackedByWhite(96);
+
+                canCastleQueenSide = this.blackCanCastleQueenSide &&
+                    (this.square[94] === Square.Empty) &&
+                    (this.square[93] === Square.Empty) &&
+                    (this.square[92] === Square.Empty) &&
+                    !this.IsAttackedByWhite(94);
+
+                if (canCastleKingSide || canCastleQueenSide) {
+                    if (!this.IsCurrentPlayerInCheck()) {
+                        if (canCastleKingSide) {
+                            movelist.push(new Move(95, 97));
+                        }
+                        if (canCastleQueenSide) {
+                            movelist.push(new Move(95, 93));
+                        }
+                    }
+                }
+            }
+
             this.DirAddMove(movelist, source, source + Direction.East);
             this.DirAddMove(movelist, source, source + Direction.NorthEast);
             this.DirAddMove(movelist, source, source + Direction.North);

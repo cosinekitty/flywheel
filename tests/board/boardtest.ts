@@ -5,6 +5,7 @@ module FlyBoardTest {
             if (!board) return;
             if (!Test.CheckInitBoardContents(board)) return;
             if (!Test.TestInitLegalMoves(board)) return;
+            if (!Test.Castling(board)) return;
         }
 
         private static InitBoard(): Flywheel.Board {
@@ -136,6 +137,20 @@ module FlyBoardTest {
             }
 
             span.innerText = 'OK: verified ' + movelist.length + ' moves.';
+            return true;
+        }
+
+        private static Castling(board: Flywheel.Board): boolean {
+            let span = window.document.getElementById('CastlingText');
+            board.PushAlgebraic('e2e4');    // 1. e4
+            board.PushAlgebraic('e7e5');    //          e5
+            board.PushAlgebraic('g1f3');    // 2. Nf3
+            board.PushAlgebraic('b8c6');    //          Nc6
+            board.PushAlgebraic('f1b5');    // 3. Bb5
+            board.PushAlgebraic('g8f6');    //          Nf6
+            board.PushAlgebraic('e1g1');    // 4. O-O
+
+            span.innerText = 'OK';
             return true;
         }
     }
