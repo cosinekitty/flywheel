@@ -307,14 +307,14 @@ module Flywheel {
             let rawlist:Move[] = this.RawMoves();
             let movelist:Move[] = [];
             for (let i:number = 0; i < rawlist.length; ++i) {
-                // Test each move for legality by making the move and
-                // looking to see if the player who just moved is in check.
                 // Before we make a move, we have to set the move.ply
                 // to match the current number of turns that have been played
                 // on the board.  This is an inexpensive way to catch bugs
                 // where a caller tries to play a move for the wrong board position.
                 rawlist[i].ply = this.moveStack.length;
 
+                // Test each move for legality by making the move and
+                // looking to see if the player who just moved is in check.
                 this.PushMove(rawlist[i]);
                 if (!this.IsPlayerInCheck(this.enemy)) {
                     movelist.push(rawlist[i]);
@@ -952,7 +952,7 @@ module Flywheel {
                     fen += emptyCount.toFixed();
                 }
                 if (y > 0) {
-                    fen += '/'
+                    fen += '/';
                 }
             }
 
@@ -1026,10 +1026,11 @@ module Flywheel {
                 let prev:Move = this.moveStack[this.moveStack.length - 1].move;
                 let dir:number = prev.dest - prev.source;
                 if ((this.square[prev.dest] === Square.WhitePawn) && (dir === 2 * Direction.North)) {
-                    // A white pawn was just pushed 2 squares forward.
+                    // A white pawn was just pushed 2 squares. Record ep target as the square it hopped over.
                     found_ep_target = true;
                     fen += Board.AlgTable[prev.source + Direction.North];
                 } else if ((this.square[prev.dest] === Square.BlackPawn) && (dir === 2 * Direction.South)) {
+                    // A black pawn was just pushed 2 squares. Record ep target as the square it hopped over.
                     found_ep_target = true;
                     fen += Board.AlgTable[prev.source + Direction.South];
                 }
