@@ -109,14 +109,19 @@ module Flywheel {
         public source: number;          // the board offset of the piece being moved
         public dest: number;            // the board offset where the piece will end up
         public prom: NeutralPiece;      // if not a pawn promotion, Empty. otherwise, the piece being promoted to
-        public score: number;           // if defined, how good/bad the move is from the moving side's point of view
+        public score: number;           // if not null, how good/bad the move is from the moving side's point of view
         public ply: number;             // sanity check that the move pertains to the same ply counter on the board
 
-        public constructor(source:number, dest:number, prom:NeutralPiece = NeutralPiece.Empty) {
+        public constructor(source:number, dest:number, prom:NeutralPiece = NeutralPiece.Empty, score:number = null, ply:number = null) {
             this.source = source;
             this.dest = dest;
             this.prom = prom;
-            // Leave score undefined until something wants to assign a value to it later.
+            this.score = score;
+            this.ply = ply;
+        }
+
+        public Clone(): Move {
+            return new Move(this.source, this.dest, this.prom, this.score, this.ply);
         }
 
         public toString(): string {      // convert the move to long algebraic form: 'e2e4' or 'e7e8q' (promotion)
@@ -444,7 +449,7 @@ module Flywheel {
 
             // Preserve information needed for PopMove() to undo this move.
             var info:MoveState = new MoveState(
-                move,
+                move.Clone(),   // clone the move so we protect from any caller side-effects
                 capture,
                 this.whiteCanCastleKingSide,
                 this.whiteCanCastleQueenSide,
