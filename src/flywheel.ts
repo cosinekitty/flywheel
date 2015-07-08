@@ -306,18 +306,18 @@ module Flywheel {
         public LegalMoves(): Move[] {
             let rawlist:Move[] = this.RawMoves();
             let movelist:Move[] = [];
-            for (let i:number = 0; i < rawlist.length; ++i) {
+            for (let raw of rawlist) {
                 // Before we make a move, we have to set the move.ply
                 // to match the current number of turns that have been played
                 // on the board.  This is an inexpensive way to catch bugs
                 // where a caller tries to play a move for the wrong board position.
-                rawlist[i].ply = this.moveStack.length;
+                raw.ply = this.moveStack.length;
 
                 // Test each move for legality by making the move and
                 // looking to see if the player who just moved is in check.
-                this.PushMove(rawlist[i]);
+                this.PushMove(raw);
                 if (!this.IsPlayerInCheck(this.enemy)) {
-                    movelist.push(rawlist[i]);
+                    movelist.push(raw);
                 }
                 this.PopMove();
             }
@@ -417,13 +417,13 @@ module Flywheel {
             return (this.square[ofs] === piece1) || (this.square[ofs] === piece2);
         }
 
-        public PushAlgebraic(alg: string, legal:Move[] = undefined): void {
-            if (legal === undefined) {
+        public PushAlgebraic(alg: string, legal:Move[] = null): void {
+            if (!legal) {
                 legal = this.LegalMoves();
             }
-            for (let i:number = 0; i < legal.length; ++i) {
-                if (legal[i].toString() === alg) {
-                    this.PushMove(legal[i]);
+            for (let move of legal) {
+                if (move.toString() === alg) {
+                    this.PushMove(move);
                     return;
                 }
             }
@@ -600,8 +600,7 @@ module Flywheel {
         private RawMoves(): Move[] {
             // Generate a list of all moves, without regard to whether the player would be in check.
             let movelist:Move[] = [];
-            for (let i:number=0; i < Board.ValidOffsetList.length; ++i) {
-                let source:number = Board.ValidOffsetList[i];
+            for (let source of Board.ValidOffsetList) {
                 var sq:Square = this.square[source];
                 if (Utility.PieceSide[sq] === this.sideToMove) {
                     this.addMoves[sq].call(this, movelist, source);
@@ -886,8 +885,7 @@ module Flywheel {
             this.whiteKingOfs = undefined;
             this.blackKingOfs = undefined;
 
-            for (let i=0; i < Board.ValidOffsetList.length; ++i) {
-                let ofs = Board.ValidOffsetList[i];
+            for (let ofs of Board.ValidOffsetList) {
                 switch (this.square[ofs]) {
                     case Square.WhiteKing:
                         if (this.whiteKingOfs === undefined) {
