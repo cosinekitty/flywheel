@@ -234,13 +234,12 @@ module Flywheel {
             return true;
         }
 
-        private static MakeEmptyBoardArray(): Square[] {
-            let i: number;
+        private static MakeBoardArray(): Square[] {
+            // It is up to the initializer to fill in valid values for the interior 8x8 squares.
+            // Just make all 120 squares "off board" to start out.
             let square: Square[] = [];
-            for (let y:number = 0; y < 12; ++y) {
-                for (let x:number = 0; x < 10; ++x) {
-                    square.push(((x>=1) && (x<=8) && (y>=2) && (y<=9)) ? Square.Empty : Square.OffBoard);
-                }
+            for (let i:number = 0; i < 120; ++i) {
+                square.push(Square.OffBoard);
             }
             return square;
         }
@@ -819,7 +818,7 @@ module Flywheel {
         }
 
         private Init(): void {
-            this.square = Board.MakeEmptyBoardArray();
+            this.square = Board.MakeBoardArray();
 
             // Create a lookup table of functions that append possible moves for each kind of piece.
             // The caller must detect which side has the move and call only for that side's pieces.
@@ -842,38 +841,35 @@ module Flywheel {
             this.blackCanCastleKingSide  = true;
             this.blackCanCastleQueenSide = true;
 
-            this.square[Board.Offset('a1')] = Square.WhiteRook;
-            this.square[Board.Offset('b1')] = Square.WhiteKnight;
-            this.square[Board.Offset('c1')] = Square.WhiteBishop;
-            this.square[Board.Offset('d1')] = Square.WhiteQueen;
-            this.square[Board.Offset('e1')] = Square.WhiteKing;
-            this.square[Board.Offset('f1')] = Square.WhiteBishop;
-            this.square[Board.Offset('g1')] = Square.WhiteKnight;
-            this.square[Board.Offset('h1')] = Square.WhiteRook;
+            let x:number = Board.Offset('a1');
+            this.square[x++] = Square.WhiteRook;
+            this.square[x++] = Square.WhiteKnight;
+            this.square[x++] = Square.WhiteBishop;
+            this.square[x++] = Square.WhiteQueen;
+            this.square[x++] = Square.WhiteKing;
+            this.square[x++] = Square.WhiteBishop;
+            this.square[x++] = Square.WhiteKnight;
+            this.square[x++] = Square.WhiteRook;
 
-            let whitePawnBase:number = Board.Offset('a2');
-            let rank3:number = Board.Offset('a3');
-            let rank4:number = Board.Offset('a4');
-            let rank5:number = Board.Offset('a5');
-            let rank6:number = Board.Offset('a6');
-            let blackPawnBase:number = Board.Offset('a7');
-            for (let x:number=0; x < 8; ++x) {
-                this.square[whitePawnBase + x] = Square.WhitePawn;
-                this.square[rank3 + x] = Square.Empty;
-                this.square[rank4 + x] = Square.Empty;
-                this.square[rank5 + x] = Square.Empty;
-                this.square[rank6 + x] = Square.Empty;
-                this.square[blackPawnBase + x] = Square.BlackPawn;
+            x = Board.Offset('a2');
+            for (let i:number = 0; i < 8; ++i, ++x) {
+                this.square[x] = Square.WhitePawn;
+                this.square[x + 10] = Square.Empty;
+                this.square[x + 20] = Square.Empty;
+                this.square[x + 30] = Square.Empty;
+                this.square[x + 40] = Square.Empty;
+                this.square[x + 50] = Square.BlackPawn;
             }
 
-            this.square[Board.Offset('a8')] = Square.BlackRook;
-            this.square[Board.Offset('b8')] = Square.BlackKnight;
-            this.square[Board.Offset('c8')] = Square.BlackBishop;
-            this.square[Board.Offset('d8')] = Square.BlackQueen;
-            this.square[Board.Offset('e8')] = Square.BlackKing;
-            this.square[Board.Offset('f8')] = Square.BlackBishop;
-            this.square[Board.Offset('g8')] = Square.BlackKnight;
-            this.square[Board.Offset('h8')] = Square.BlackRook;
+            x = Board.Offset('a8');
+            this.square[x++] = Square.BlackRook;
+            this.square[x++] = Square.BlackKnight;
+            this.square[x++] = Square.BlackBishop;
+            this.square[x++] = Square.BlackQueen;
+            this.square[x++] = Square.BlackKing;
+            this.square[x++] = Square.BlackBishop;
+            this.square[x++] = Square.BlackKnight;
+            this.square[x++] = Square.BlackRook;
 
             this.Update();
         }
