@@ -1,3 +1,4 @@
+/// <reference path="../../src/flywheel.ts"/>
 module FlyBoardTest {
     export class Test {
         public static Run(): void {
@@ -181,6 +182,12 @@ module FlyBoardTest {
             let algHistory:string = board.AlgHistory();
             if (algHistory != 'e2e4 e7e5 g1f3 b8c6 f1b5 g8f6 e1g1') {
                 span.innerText = 'Incorrect algebraic game history: ' + algHistory;
+                return false;
+            }
+
+            let pgnHistory:string = board.PgnHistory();
+            if (pgnHistory != 'e4 e5 Nf3 Nc6 Bb5 Nf6 O-O') {
+                span.innerText = 'Incorrect PGN game history: ' + pgnHistory;
                 return false;
             }
 

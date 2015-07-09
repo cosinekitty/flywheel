@@ -39,7 +39,7 @@ module Flywheel {
     }
 
     export enum Side {
-        White, Black
+        Neither, White, Black
     }
 
     class Utility {
@@ -57,6 +57,7 @@ module Flywheel {
             Utility.SidePieces = {};
             Utility.Neutral = {};
 
+            Utility.PieceSide[Square.Empty] = Side.Neither;
             Utility.PieceSide[ Utility.WhitePieces[NeutralPiece.Pawn]   = Square.WhitePawn   ] = Side.White;
             Utility.PieceSide[ Utility.WhitePieces[NeutralPiece.Knight] = Square.WhiteKnight ] = Side.White;
             Utility.PieceSide[ Utility.WhitePieces[NeutralPiece.Bishop] = Square.WhiteBishop ] = Side.White;
@@ -71,6 +72,7 @@ module Flywheel {
             Utility.PieceSide[ Utility.BlackPieces[NeutralPiece.Queen]  = Square.BlackQueen  ] = Side.Black;
             Utility.PieceSide[ Utility.BlackPieces[NeutralPiece.King]   = Square.BlackKing   ] = Side.Black;
 
+            Utility.Neutral[Square.Empty] = NeutralPiece.Empty;
             Utility.Neutral[Square.WhitePawn]   = Utility.Neutral[Square.BlackPawn]   = NeutralPiece.Pawn;
             Utility.Neutral[Square.WhiteKnight] = Utility.Neutral[Square.BlackKnight] = NeutralPiece.Knight;
             Utility.Neutral[Square.WhiteBishop] = Utility.Neutral[Square.BlackBishop] = NeutralPiece.Bishop;
@@ -101,6 +103,24 @@ module Flywheel {
                 case Square.BlackKing:      return 'k';
                 default:
                     throw 'Invalid square contents: ' + p;
+            }
+        }
+
+        public static UnsidedPieceCharacter(p:Square):string {
+            return Utility.SidedPieceCharacter(p).toUpperCase();
+        }
+
+        public static NeutralPieceCharacter(p:NeutralPiece):string {
+            switch (p) {
+                case NeutralPiece.Empty:    return '.';
+                case NeutralPiece.Pawn:     return 'P';
+                case NeutralPiece.Knight:   return 'N';
+                case NeutralPiece.Bishop:   return 'B';
+                case NeutralPiece.Rook:     return 'R';
+                case NeutralPiece.Queen:    return 'Q';
+                case NeutralPiece.King:     return 'K';
+                default:
+                    throw 'Invalid neutral piece: ' + p;
             }
         }
     }
@@ -324,6 +344,11 @@ module Flywheel {
             return movelist;
         }
 
+        public CurrentPlayerCanMove():boolean {
+            // FIXFIXFIX: could make this a lot more efficient by bailing out as soon as we find a move.
+            return this.LegalMoves().length > 0;
+        }
+
         public IsCurrentPlayerInCheck():boolean {
             if (this.currentPlayerInCheck === undefined) {
                 this.currentPlayerInCheck = this.IsPlayerInCheck(this.sideToMove);
@@ -437,10 +462,27 @@ module Flywheel {
             return history;
         }
 
-        public PushNotation(alg: string, legal:Move[] = null): void {
-            if (!legal) {
-                legal = this.LegalMoves();
+        public PgnHistory(): string {   // terse list of moves without PGN header, newlines, or move numbers
+            // We need the board to be in the state it was before
+            // each move was made in order to format each move in PGN.
+            // Therefore, we need to start with a board at the beginning of the game,
+            // then for each move, format the move, then make the move.
+            // Any exception that occurred in the middle of this procedure could corrupt
+            // the board state.  Therefore, instead of modifying this Board object,
+            // we create a temporary board object to make all the moves in.
+            let tempBoard:Board = new Board();  // FIXFIXFIX - add initial FEN support?  (related to Issue #4)
+            let history:string = '';
+            for (let info of this.moveStack) {
+                if (history.length > 0) {
+                    history += ' ';
+                }
+                history += tempBoard.PgnFormat(info.move);
+                tempBoard.PushMove(info.move);
             }
+            return history;
+        }
+
+        public PushNotation(alg: string, legal:Move[] = this.LegalMoves()): void {
             for (let move of legal) {
                 if (move.toString() === alg) {
                     this.PushMove(move);
@@ -1078,6 +1120,155 @@ module Flywheel {
             fen += (1 + (this.moveStack.length >> 1)).toFixed();
 
             return fen;
+        }
+
+        private static IsLegal(move:Move, legalMoveList:Move[]):boolean {
+            for (let legal of legalMoveList) {
+                if (move.source === legal.source && move.dest === legal.dest && move.prom === legal.prom) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public PgnFormat(move:Move, legalMoveList:Move[] = this.LegalMoves()): string {
+            if (!Board.IsLegal(move, legalMoveList)) {
+                // It is important to prevent board corruption.
+                // PushMove/PopMove can leave the board in a mangled state if the move is illegal.
+                throw 'Illegal move passed to PgnFormat';
+            }
+            let pgn:string = '';
+
+            this.PushMove(move);
+            let check:boolean = this.IsCurrentPlayerInCheck();
+            let immobile:boolean = this.CurrentPlayerCanMove();
+            this.PopMove();
+
+            let dir:number = move.dest - move.source;
+            let piece:NeutralPiece = Utility.Neutral[this.square[move.source]];
+
+            if (piece === NeutralPiece.King && dir === 2 * Direction.East) {
+                pgn = 'O-O';
+            } else if (piece === NeutralPiece.King && dir === 2 * Direction.West) {
+                pgn = 'O-O-O';
+            } else {
+                let pieceSymbol:string = Utility.UnsidedPieceCharacter(this.square[move.source]);
+                let alg1:string = Board.AlgTable[move.source];
+                let alg2:string = Board.AlgTable[move.dest];
+                let file1:string = alg1.charAt(0);
+                let rank1:string = alg1.charAt(1);
+                let file2:string = alg2.charAt(0);
+                let rank2:string = alg2.charAt(1);
+                let capture:NeutralPiece = Utility.Neutral[this.square[move.dest]];
+                if (piece === NeutralPiece.Pawn && file1 !== file2 && capture === NeutralPiece.Empty) {
+                    // Adjust for en passant capture
+                    capture = NeutralPiece.Pawn;
+                }
+
+                // Central to PGN is the concept of "ambiguous" notation.
+                // We want to figure out the minimum number of characters needed
+                // to unambiguously encode the chess move.
+                // Create a compact list that contains only moves with the same
+                // destination and moving piece.
+                // Include only pawn promotions to the same promoted piece.
+                let compact:Move[] = [];
+                for (let cmove of legalMoveList) {
+                    if ((cmove.dest === move.dest) && (cmove.prom === move.prom)) {
+                        let cpiece:NeutralPiece = Utility.Neutral[this.square[cmove.source]];
+                        if (cpiece === piece) {
+                            compact.push(cmove);
+                        }
+                    }
+                }
+
+                // compact now contains moves to same dest by same piece (with same promotion if promotion)
+                if (compact.length === 0) {
+                    throw 'PGN compactor found 0 moves';    // should have been caught by legal move check above!
+                }
+
+                let needSourceFile:boolean = false;
+                let needSourceRank:boolean = false;
+                if (compact.length > 1) {
+                    /*
+                        [The following is quoted from http://www.very-best.de/pgn-spec.htm, section 8.2.3.]
+
+                        In the case of ambiguities (multiple pieces of the same type moving to the same square),
+                        the first appropriate disambiguating step of the three following steps is taken:
+
+                        First, if the moving pieces can be distinguished by their originating files,
+                        the originating file letter of the moving piece is inserted immediately after
+                        the moving piece letter.
+
+                        Second (when the first step fails), if the moving pieces can be distinguished by
+                        their originating ranks, the originating rank digit of the moving piece is inserted
+                        immediately after the moving piece letter.
+
+                        Third (when both the first and the second steps fail), the two character square
+                        coordinate of the originating square of the moving piece is inserted immediately
+                        after the moving piece letter.
+                    */
+                    let fileCount:number = 0;
+                    let rankCount:number = 0;
+                    for (let cmove of compact) {
+                        let calg:string = Board.Algebraic[cmove.source];
+                        let cfile:string = calg.charAt(0);
+                        let crank:string = calg.charAt(1);
+                        if (cfile === file1) {
+                            ++fileCount;
+                        }
+                        if (crank === rank1) {
+                            ++rankCount;
+                        }
+                    }
+
+                    if (fileCount === 1) {
+                        needSourceFile = true;
+                    } else {
+                        needSourceRank = true;
+                        if (rankCount > 1) {
+                            needSourceFile = true;
+                        }
+                    }
+                }
+
+                if (piece === NeutralPiece.Pawn) {
+                    // A piece designator is never used for pawns.
+                    // For example, a pawn moving from e2 to e4 is represented as "e4".
+                    if (capture != NeutralPiece.Empty) {
+                        // When a pawn makes a capture, include its original file letter before the 'x'.
+                        // For example, a pawn at e4 capturing something at d5 is represented as "exd5".
+                        needSourceFile = true;
+                    }
+                } else {
+                    pgn += pieceSymbol;
+                }
+
+                if (needSourceFile) {
+                    pgn += file1;
+                }
+
+                if (needSourceRank) {
+                    pgn += rank1;
+                }
+
+                if (capture != NeutralPiece.Empty) {
+                    pgn += 'x';
+                }
+
+                pgn += file2;
+                pgn += rank2;
+                if (move.prom != NeutralPiece.Empty) {
+                    pgn += '=' + Utility.NeutralPieceCharacter(move.prom);
+                }
+            }
+
+            if (check) {
+                // If a move causes checkmate, put '#' at the end.
+                // Otherwise, if the move merely causes check, put '+' at the end.
+                pgn += immobile ? '#' : '+';
+            }
+
+            return pgn;
         }
     }
 }
