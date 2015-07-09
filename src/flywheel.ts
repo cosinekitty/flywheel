@@ -417,6 +417,26 @@ module Flywheel {
             return (this.square[ofs] === piece1) || (this.square[ofs] === piece2);
         }
 
+        public MoveHistory(): Move[] {
+            // Make a clone of the moves in the move stack.
+            let history:Move[] = [];
+            for (let info of this.moveStack) {
+                history.push(info.move.Clone());
+            }
+            return history;
+        }
+
+        public AlgHistory(): string {
+            let history:string = '';
+            for (let info of this.moveStack) {
+                if (history.length > 0) {
+                    history += ' ';
+                }
+                history += info.move.toString();
+            }
+            return history;
+        }
+
         public PushNotation(alg: string, legal:Move[] = null): void {
             if (!legal) {
                 legal = this.LegalMoves();
@@ -427,7 +447,7 @@ module Flywheel {
                     return;
                 }
             }
-            throw 'Not a legal move: "' + alg + '"';
+            throw 'Move notation is not valid/legal: "' + alg + '"';
         }
 
         public PushMove(move: Move): void {

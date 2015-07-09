@@ -178,6 +178,12 @@ module FlyBoardTest {
                 return false;
             }
 
+            let algHistory:string = board.AlgHistory();
+            if (algHistory != 'e2e4 e7e5 g1f3 b8c6 f1b5 g8f6 e1g1') {
+                span.innerText = 'Incorrect algebraic game history: ' + algHistory;
+                return false;
+            }
+
             span.innerText = 'OK';
             span.className = 'PassedTest';
             return true;
