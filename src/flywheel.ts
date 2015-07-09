@@ -1166,7 +1166,6 @@ module Flywheel {
                 let file1:string = alg1.charAt(0);
                 let rank1:string = alg1.charAt(1);
                 let file2:string = alg2.charAt(0);
-                let rank2:string = alg2.charAt(1);
                 let capture:NeutralPiece = Utility.Neutral[this.square[move.dest]];
                 if (piece === NeutralPiece.Pawn && file1 !== file2 && capture === NeutralPiece.Empty) {
                     // Adjust for en passant capture
@@ -1263,8 +1262,7 @@ module Flywheel {
                     pgn += 'x';
                 }
 
-                pgn += file2;
-                pgn += rank2;
+                pgn += alg2;        // append the notation for the destination square
                 if (move.prom != NeutralPiece.Empty) {
                     pgn += '=' + Utility.NeutralPieceCharacter(move.prom);
                 }
