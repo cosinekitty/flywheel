@@ -3,27 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <title>Flywheel unit test #1: board</title>
+    <link rel="stylesheet" type="text/css" href="../shared/flytest.css">
 </head>
 <body onload="FlyBoardTest.Test.Run()">
-    <div>
-        Board initialized:
-        <span id="BoardInitText">(pending)</span>
-    </div>
+    <table>
+        <tr class="TestHeader">
+            <td>Test</td>
+            <td>Result</td>
+        </tr>
+        <tr class="TestRow">
+            <td>Board init</td>
+            <td><span id="BoardInitText" class="PendingTest">(pending)</span></td>
+        </tr>
+        <tr class="TestRow">
+            <td>Board contents</td>
+            <td><span id="BoardContentsText" class="PendingTest">(pending)</span></td>
+        </tr>
+        <tr class="TestRow">
+            <td>Initial legal moves</td>
+            <td><span id="BoardInitLegal" class="PendingTest">(pending)</span></td>
+        </tr>
+        <tr class="TestRow">
+            <td>Castling</td>
+            <td><span id="CastlingText" class="PendingTest">(pending)</span></td>
+        </tr>
+    </table>
 
-    <div>
-        Board contents:
-        <span id="BoardContentsText">(pending)</span>
-    </div>
-
-    <div>
-        Board initial legal moves:
-        <span id="BoardInitLegal">(pending)</span>
-    </div>
-
-    <div>
-        Castling tests:
-        <span id="CastlingText">(pending)</span>
-    </div>
+    <div class="TestSummary" id="TestSummaryText" class="PendingTest"></div>
 
     <script src="../../src/flywheel.js"></script>
     <script src="boardtest.js"></script>

@@ -417,7 +417,7 @@ module Flywheel {
             return (this.square[ofs] === piece1) || (this.square[ofs] === piece2);
         }
 
-        public PushAlgebraic(alg: string, legal:Move[] = null): void {
+        public PushNotation(alg: string, legal:Move[] = null): void {
             if (!legal) {
                 legal = this.LegalMoves();
             }

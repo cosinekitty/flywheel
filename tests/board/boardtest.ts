@@ -1,34 +1,44 @@
 module FlyBoardTest {
     export class Test {
         public static Run(): void {
+            var summary = window.document.getElementById('TestSummaryText');
+            summary.innerText = 'FAILURE';
+            summary.className = 'TestSummary FailedTest';
+
             var board:Flywheel.Board = Test.InitBoard();
             if (!board) return;
             if (!Test.CheckInitBoardContents(board)) return;
             if (!Test.TestInitLegalMoves(board)) return;
             if (!Test.Castling(board)) return;
+
+            summary.innerText = 'All tests passed.';
+            summary.className = 'TestSummary PassedTest';
         }
 
         private static InitBoard(): Flywheel.Board {
             // Construct a chess board object.
-            let boardInitText = window.document.getElementById('BoardInitText');
-            boardInitText.innerText = 'running';
+            let span = window.document.getElementById('BoardInitText');
+            span.className = 'FailedTest';
+            span.innerText = 'running';
             let board:Flywheel.Board = new Flywheel.Board();
             if (board.IsWhiteToMove() !== true) {
-                boardInitText.innerText = 'FAILURE: IsWhiteToMove did not return true.';
+                span.innerText = 'FAILURE: IsWhiteToMove did not return true.';
                 return null;
             }
             if (board.IsBlackToMove() !== false) {
-                boardInitText.innerText = 'FAILURE: IsBlackToMove did not return false.';
+                span.innerText = 'FAILURE: IsBlackToMove did not return false.';
                 return null;
             }
-            boardInitText.innerText = 'OK';
+            span.innerText = 'OK';
+            span.className = 'PassedTest';
             return board;
         }
 
         private static CheckInitBoardContents(board:Flywheel.Board): boolean {
             // Verify we can read the correct contents of each square.
-            var boardContentsText = window.document.getElementById('BoardContentsText');
-            boardContentsText.innerText = 'running';
+            var span = window.document.getElementById('BoardContentsText');
+            span.className = 'FailedTest';
+            span.innerText = 'running';
             let contents = {
                 'a1': Flywheel.Square.WhiteRook,
                 'b1': Flywheel.Square.WhiteKnight,
@@ -101,17 +111,20 @@ module FlyBoardTest {
                 let checkSquare:Flywheel.Square = contents[alg];
                 let testSquare:Flywheel.Square = board.GetSquare(alg);
                 if (checkSquare != testSquare) {
-                    boardContentsText.innerText = 'FAILURE: Expected ' + Flywheel.Square[checkSquare] + ' in ' + alg + ' but found ' + Flywheel.Square[testSquare];
+                    span.innerText = 'FAILURE: Expected ' + Flywheel.Square[checkSquare] + ' in ' + alg + ' but found ' + Flywheel.Square[testSquare];
                     return false;
                 }
                 ++numSquaresChecked;
             }
-            boardContentsText.innerText = 'OK: checked ' + numSquaresChecked + ' squares.';
+            span.innerText = 'OK: checked ' + numSquaresChecked + ' squares.';
+            span.className = 'PassedTest';
             return true;
         }
 
         private static TestInitLegalMoves(board: Flywheel.Board): boolean {
             let span = window.document.getElementById('BoardInitLegal');
+            span.className = 'FailedTest';  // assume failure or crash, unless everything works
+
             let movelist: Flywheel.Move[] = board.LegalMoves();
             let correctMoves = {
                 'a2a3':1, 'a2a4':1, 'b2b3':1, 'b2b4':1, 'c2c3':1, 'c2c4':1, 'd2d3':1, 'd2d4':1,
@@ -137,11 +150,13 @@ module FlyBoardTest {
             }
 
             span.innerText = 'OK: verified ' + movelist.length + ' moves.';
+            span.className = 'PassedTest';
             return true;
         }
 
         private static Castling(board: Flywheel.Board): boolean {
             let span = window.document.getElementById('CastlingText');
+            span.className = 'FailedTest';
 
             let fen1:string = board.ForsythEdwardsNotation();
             if (fen1 !== 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1') {
@@ -149,13 +164,13 @@ module FlyBoardTest {
                 return false;
             }
 
-            board.PushAlgebraic('e2e4');    // 1. e4
-            board.PushAlgebraic('e7e5');    //          e5
-            board.PushAlgebraic('g1f3');    // 2. Nf3
-            board.PushAlgebraic('b8c6');    //          Nc6
-            board.PushAlgebraic('f1b5');    // 3. Bb5
-            board.PushAlgebraic('g8f6');    //          Nf6
-            board.PushAlgebraic('e1g1');    // 4. O-O
+            board.PushNotation('e2e4');    // 1. e4
+            board.PushNotation('e7e5');    //          e5
+            board.PushNotation('g1f3');    // 2. Nf3
+            board.PushNotation('b8c6');    //          Nc6
+            board.PushNotation('f1b5');    // 3. Bb5
+            board.PushNotation('g8f6');    //          Nf6
+            board.PushNotation('e1g1');    // 4. O-O
 
             let fen2:string = board.ForsythEdwardsNotation();
             if (fen2 !== 'r1bqkb1r/pppp1ppp/2n2n2/1B2p3/4P3/5N2/PPPP1PPP/RNBQ1RK1 b kq - 5 4') {
@@ -164,6 +179,7 @@ module FlyBoardTest {
             }
 
             span.innerText = 'OK';
+            span.className = 'PassedTest';
             return true;
         }
     }

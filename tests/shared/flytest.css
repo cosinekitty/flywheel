@@ -1,0 +1,29 @@
+/*
+    flytest.css  -  Don Cross
+*/
+
+.TestHeader {
+    font-family: sans-serif;
+    color: #0000f0;
+}
+
+.TestRow {
+    font-family: sans-serif;
+}
+
+.TestSummary {
+    font-family: monospace;
+    font-size: large;
+}
+
+.PendingTest {
+    color: gray;
+}
+
+.PassedTest {
+    color: green;
+}
+
+.FailedTest {
+    color: red;
+}
