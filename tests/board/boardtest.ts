@@ -191,6 +191,14 @@ module FlyBoardTest {
                 return false;
             }
 
+            // Verify board cloner:
+            let copy:Flywheel.Board = board.Clone();
+            let copyHistory:string = copy.PgnHistory();
+            if (copyHistory !== pgnHistory) {
+                span.innerText = 'Cloned board PGN history does not match original history: ' + copyHistory;
+                return false;
+            }
+
             span.innerText = 'OK';
             span.className = 'PassedTest';
             return true;

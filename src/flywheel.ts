@@ -307,6 +307,14 @@ module Flywheel {
             this.Reset();
         }
 
+        public Clone():Board {
+            let copy:Board = new Board();
+            for (let info of this.moveStack) {
+                copy.PushMove(info.move);
+            }
+            return copy;
+        }
+
         public GetSquare(alg:string):Square {
             return this.square[Board.Offset(alg)];
         }
