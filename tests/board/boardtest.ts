@@ -171,7 +171,7 @@ module FlyBoardTest {
             board.PushNotation('b8c6');    //          Nc6
             board.PushNotation('f1b5');    // 3. Bb5
             board.PushNotation('g8f6');    //          Nf6
-            board.PushNotation('e1g1');    // 4. O-O
+            board.PushNotation('O-O');     // 4. O-O
 
             let fen2:string = board.ForsythEdwardsNotation();
             if (fen2 !== 'r1bqkb1r/pppp1ppp/2n2n2/1B2p3/4P3/5N2/PPPP1PPP/RNBQ1RK1 b kq - 5 4') {
