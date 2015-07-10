@@ -353,8 +353,23 @@ module Flywheel {
         }
 
         public CurrentPlayerCanMove():boolean {
-            // FIXFIXFIX: could make this a lot more efficient by bailing out as soon as we find a move.
-            return this.LegalMoves().length > 0;
+            for (let source of Board.ValidOffsetList) {
+                var sq:Square = this.square[source];
+                if (Utility.PieceSide[sq] === this.sideToMove) {
+                    let movelist:Move[] = [];
+                    this.addMoves[sq].call(this, movelist, source);
+                    for (let move of movelist) {
+                        move.ply = this.moveStack.length;
+                        this.PushMove(move);
+                        let legal:boolean = !this.IsPlayerInCheck(this.enemy);
+                        this.PopMove();
+                        if (legal) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
         }
 
         public IsCurrentPlayerInCheck():boolean {
