@@ -206,10 +206,54 @@ module FlyBoardTest {
             return true;
         }
 
+        private static FindMissingMove(legal1, legal2): string {
+            for (let notation2 of legal2) {
+                let found = false;
+                for (let notation1 of legal1) {
+                    if (notation1 === notation2) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    return notation2;
+                }
+            }
+            return null;
+        }
+
+        private static VerifyLegalMoves(board:Flywheel.Board, span, legal:string[]): boolean {
+            let fen1:string = board.ForsythEdwardsNotation();
+            let calcMoves:Flywheel.Move[] = board.LegalMoves();
+            let fen2:string = board.ForsythEdwardsNotation();
+            if (fen1 !== fen2) {
+                span.innerText = 'Board FEN corruption: before=['+fen1+'], after=['+fen2+']';
+                return false;
+            }
+            let calcLegal:string[] = [];
+            for (let move of calcMoves) {
+                calcLegal.push(move.toString());
+            }
+            let missing:string = Test.FindMissingMove(calcLegal, legal);
+            if (missing) {
+                span.innerText = 'Missing legal move ' + missing + ' in position ' + board.ForsythEdwardsNotation();
+                return false;
+            }
+            missing = Test.FindMissingMove(legal, calcLegal);
+            if (missing) {
+                span.innerText = 'Extraneous legal move: ' + missing + ' in position ' + board.ForsythEdwardsNotation();
+                return false;
+            }
+            return true;
+        }
+
         private static TestGame(board: Flywheel.Board, span, game): boolean {
             board.Reset();
             for (let turn of game) {
-                // move, fen, check, mobile, draw
+                // Verify that we agree with Chenard on the list of legal moves.
+                if (!Test.VerifyLegalMoves(board, span, turn.legal)) return false;
+
+                // move, fen, check, mobile, draw, legal
                 board.PushNotation(turn.move);
                 let calcfen:string = board.ForsythEdwardsNotation();
                 if (calcfen != turn.fen) {
