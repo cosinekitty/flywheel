@@ -643,6 +643,8 @@ module Flywheel {
 
             this.moveStack.push(info);
 
+            this.currentPlayerInCheck = undefined;  // we no longer know if the current player is in check
+
             if (capture !== Square.Empty) {
                 // Update the halfmove clock on any capture.
                 this.lastCapOrPawnPly = move.ply;
