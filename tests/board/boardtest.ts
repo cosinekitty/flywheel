@@ -2,6 +2,7 @@
 /// <reference path="game001.ts"/>
 /// <reference path="game002.ts"/>
 /// <reference path="game003.ts"/>
+/// <reference path="game004.ts"/>
 module FlyBoardTest {
     export class Test {
         public static Run(): void {
@@ -265,8 +266,20 @@ module FlyBoardTest {
                 // move, fen, check, mobile, draw, legal
                 board.PushNotation(turn.move);
                 let calcfen:string = board.ForsythEdwardsNotation();
-                if (calcfen != turn.fen) {
+                if (calcfen !== turn.fen) {
                     span.innerText = 'FEN mismatch: "' + calcfen + '" != "' + turn.fen + '"';
+                    return false;
+                }
+
+                let check:boolean = board.IsCurrentPlayerInCheck();
+                if (check !== turn.check) {
+                    span.innerText = 'Calc check=' + check + ', but turn.check=' + turn.check;
+                    return false;
+                }
+
+                let mobile:boolean = board.CurrentPlayerCanMove();
+                if (mobile !== turn.mobile) {
+                    span.innerText = 'Calc mobile=' + mobile + ', but turn.mobile=' + turn.mobile;
                     return false;
                 }
             }
@@ -278,6 +291,7 @@ module FlyBoardTest {
             if (!Test.TestGame(board, span, game001)) return false;
             if (!Test.TestGame(board, span, game002)) return false;
             if (!Test.TestGame(board, span, game003)) return false;
+            if (!Test.TestGame(board, span, game004)) return false;
             span.innerText = 'OK: checked ' + Test.StepCount.toFixed() + ' turns.';
             span.className = 'PassedTest';
             return true;

@@ -1,3 +1,4 @@
 *.js
 *.map
 .idea
+tests/board/data/original
