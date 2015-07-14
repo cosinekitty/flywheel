@@ -1,5 +1,7 @@
 /// <reference path="../../src/flywheel.ts"/>
 /// <reference path="game001.ts"/>
+/// <reference path="game002.ts"/>
+/// <reference path="game003.ts"/>
 module FlyBoardTest {
     export class Test {
         public static Run(): void {
@@ -236,12 +238,12 @@ module FlyBoardTest {
             }
             let missing:string = Test.FindMissingMove(calcLegal, legal);
             if (missing) {
-                span.innerText = 'Missing legal move ' + missing + ' in position ' + board.ForsythEdwardsNotation();
+                span.innerText = '(Step ' + Test.StepCount + ') Missing legal move ' + missing + ' in position ' + board.ForsythEdwardsNotation();
                 return false;
             }
             missing = Test.FindMissingMove(legal, calcLegal);
             if (missing) {
-                span.innerText = 'Extraneous legal move: ' + missing + ' in position ' + board.ForsythEdwardsNotation();
+                span.innerText = '(Step ' + Test.StepCount + ') Extraneous legal move: ' + missing + ' in position ' + board.ForsythEdwardsNotation();
                 return false;
             }
             return true;
@@ -250,8 +252,11 @@ module FlyBoardTest {
         private static StepCount:number = 0;
 
         private static TestGame(board: Flywheel.Board, span, game): boolean {
-            board.Reset();
             for (let turn of game) {
+                if (turn.reset) {
+                    board.Reset();
+                }
+
                 ++Test.StepCount;       // Handy for setting conditional breakpoints to debug particular problems.
 
                 // Verify that we agree with Chenard on the list of legal moves.
@@ -271,7 +276,9 @@ module FlyBoardTest {
         private static GameTests(board: Flywheel.Board): boolean {
             let span = window.document.getElementById('GameText');
             if (!Test.TestGame(board, span, game001)) return false;
-            span.innerText = 'OK';
+            if (!Test.TestGame(board, span, game002)) return false;
+            if (!Test.TestGame(board, span, game003)) return false;
+            span.innerText = 'OK: checked ' + Test.StepCount.toFixed() + ' turns.';
             span.className = 'PassedTest';
             return true;
         }

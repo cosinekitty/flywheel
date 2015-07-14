@@ -7,6 +7,8 @@
     "files": [
         "../../src/flywheel.ts",
         "game001.ts",
+        "game002.ts",
+        "game003.ts",
         "boardtest.ts"
     ]
 }

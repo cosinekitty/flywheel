@@ -1,2 +1,4 @@
 #!/bin/bash
 chenard --flytest game001.pgn ../game001.ts game001
+chenard --flytest game002.pgn ../game002.ts game002
+chenard --flytest game003.pgn ../game003.ts game003
