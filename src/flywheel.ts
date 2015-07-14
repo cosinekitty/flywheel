@@ -211,7 +211,7 @@ module Flywheel {
                    a   b   c   d   e   f   g   h   <-- files
     */
 
-    export enum Direction {     // values that can be added to an offset to obtain another offset in the board
+    enum Direction {     // values that can be added to an offset to obtain another offset in the board
         East        =   1,
         NorthEast   =  11,
         North       =  10,
@@ -229,6 +229,30 @@ module Flywheel {
         Knight6     = -21,
         Knight7     = -19,
         Knight8     =  -8,
+    }
+
+    export enum GameStatus {
+        InProgress,
+        Draw,
+        WhiteWins,
+        BlackWins
+    }
+
+    export enum DrawType {
+        Stalemate,              // current player cannot move but is not in check
+        InsufficientMaterial,   // neither side possesses material sufficient to deliver checkmate
+        ThreefoldRepetition,    // same position occurred 3 times
+        FiftyMoveRule           // 50 moves without a capture or a pawn advance
+    }
+
+    export class GameResult {
+        public status:GameStatus;
+        public drawType:DrawType;
+
+        constructor(status:GameStatus, drawType:DrawType = null) {
+            this.status = status;
+            this.drawType = drawType;
+        }
     }
 
     export class Board {
@@ -350,6 +374,21 @@ module Flywheel {
                 this.PopMove();
             }
             return movelist;
+        }
+
+        public GetGameResult(): GameResult {
+            if (this.CurrentPlayerCanMove()) {
+                // FIXFIXFIX - detect draws by threefold repetition
+                // FIXFIXFIX - detect draws by insufficient material
+                // FIXFIXFIX - detect draws by 50-move rule
+                return new GameResult(GameStatus.InProgress);
+            }
+
+            if (this.IsCurrentPlayerInCheck()) {
+                return new GameResult(this.IsWhiteToMove() ? GameStatus.BlackWins : GameStatus.WhiteWins);
+            }
+
+            return new GameResult(GameStatus.Draw, DrawType.Stalemate);
         }
 
         public CurrentPlayerCanMove():boolean {

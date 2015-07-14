@@ -1,4 +1,5 @@
 /// <reference path="../../src/flywheel.ts"/>
+/// <reference path="game001.ts"/>
 module FlyBoardTest {
     export class Test {
         public static Run(): void {
@@ -11,6 +12,7 @@ module FlyBoardTest {
             if (!Test.CheckInitBoardContents(board)) return;
             if (!Test.TestInitLegalMoves(board)) return;
             if (!Test.Castling(board)) return;
+            if (!Test.GameTests(board)) return;
 
             summary.innerText = 'All tests passed.';
             summary.className = 'TestSummary PassedTest';
@@ -199,6 +201,28 @@ module FlyBoardTest {
                 return false;
             }
 
+            span.innerText = 'OK';
+            span.className = 'PassedTest';
+            return true;
+        }
+
+        private static TestGame(board: Flywheel.Board, span, game): boolean {
+            board.Reset();
+            for (let turn of game) {
+                // move, fen, check, mobile, draw
+                board.PushNotation(turn.move);
+                let calcfen:string = board.ForsythEdwardsNotation();
+                if (calcfen != turn.fen) {
+                    span.innerText = 'FEN mismatch: "' + calcfen + '" != "' + turn.fen + '"';
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private static GameTests(board: Flywheel.Board): boolean {
+            let span = window.document.getElementById('GameText');
+            if (!Test.TestGame(board, span, game001)) return false;
             span.innerText = 'OK';
             span.className = 'PassedTest';
             return true;

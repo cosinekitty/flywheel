@@ -1,0 +1,2 @@
+#!/bin/bash
+chenard --flytest game001.pgn ../game001.ts game001
