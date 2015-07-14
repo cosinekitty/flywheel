@@ -772,7 +772,7 @@ module Flywheel {
             } else {
                 // This move is a pawn promotion.
                 // To undo pawn promotion, we change the promoted piece back into a pawn.
-                this.square[info.move.source] = Utility.SidePieces[this.sideToMove][info.move.prom];
+                this.square[info.move.source] = Utility.SidePieces[this.sideToMove][NeutralPiece.Pawn];
             }
 
             // Put whatever was in the destination square back there.

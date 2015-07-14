@@ -229,7 +229,7 @@ module FlyBoardTest {
             let calcMoves:Flywheel.Move[] = board.LegalMoves();
             let fen2:string = board.ForsythEdwardsNotation();
             if (fen1 !== fen2) {
-                span.innerText = 'Board FEN corruption: before=['+fen1+'], after=['+fen2+']';
+                span.innerText = '(Step ' + Test.StepCount + ') Board corruption: before=['+fen1+'], after=['+fen2+']';
                 return false;
             }
             let calcLegal:string[] = [];
