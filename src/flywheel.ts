@@ -675,10 +675,13 @@ module Flywheel {
                     }
                 } else if (neutralPiece === NeutralPiece.King) {
                     // Any king move disables castling for that player.
+                    // We also keep the king offset variables up to date.
                     if (piece === Square.WhiteKing) {
                         this.whiteCanCastleKingSide = this.whiteCanCastleQueenSide = false;
+                        this.whiteKingOfs = move.dest;
                     } else {
                         this.blackCanCastleKingSide = this.blackCanCastleQueenSide = false;
+                        this.blackKingOfs = move.dest;
                     }
                     if (dir === 2*Direction.East) {
                         // Assume this is kingside castling.  Move the rook around the king.
@@ -746,6 +749,13 @@ module Flywheel {
             this.whiteCanCastleQueenSide = info.whiteCanCastleQueenSide;
             this.blackCanCastleKingSide  = info.blackCanCastleKingSide;
             this.blackCanCastleQueenSide = info.blackCanCastleQueenSide;
+
+            // Restore king positions if we are undoing a king move.
+            if (info.move.dest === this.whiteKingOfs) {
+                this.whiteKingOfs = info.move.source;
+            } else if (info.move.dest === this.blackKingOfs) {
+                this.blackKingOfs = info.move.source;
+            }
 
             // Restore any knowledge we might have had about the player being in check.
             this.currentPlayerInCheck = info.playerWasInCheck;

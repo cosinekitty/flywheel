@@ -247,9 +247,13 @@ module FlyBoardTest {
             return true;
         }
 
+        private static StepCount:number = 0;
+
         private static TestGame(board: Flywheel.Board, span, game): boolean {
             board.Reset();
             for (let turn of game) {
+                ++Test.StepCount;       // Handy for setting conditional breakpoints to debug particular problems.
+
                 // Verify that we agree with Chenard on the list of legal moves.
                 if (!Test.VerifyLegalMoves(board, span, turn.legal)) return false;
 
