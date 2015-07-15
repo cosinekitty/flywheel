@@ -6,6 +6,6 @@
 #
 #   Then launch the test in your browser using the following URL:
 #
-#   http://localhost:5432/tests/board/
+#   http://localhost:5432/tests/worker/
 #
 python -m SimpleHTTPServer 5432
