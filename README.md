@@ -6,7 +6,8 @@ Flywheel is a pure Javascript chess engine (still in development).
 
 * Computer plays chess with adjustable skill level.
   * AI will run in Javascript background worker.
-  * Will be strong enough to be a challenge for most people, but possible to decrease strength so weaker players can beat it.
+  * Will be strong enough to be a challenge for most people.
+  * Possible to decrease strength so weaker players can beat it.
 * Also enables creating chess-related HTML5 apps that don't play chess, but just need to know about chess rules.
 * No built-in user interface - can be adapted to any UI you want.
 * No dependencies on other Javascript libraries (pure Javascript/HTML5).
