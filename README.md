@@ -10,16 +10,17 @@ Flywheel is a pure Javascript chess engine (still in development).
 * Also enables creating chess-related HTML5 apps that don't play chess, but just need to know about chess rules.
 * No built-in user interface - can be adapted to any UI you want.
 * No dependencies on other Javascript libraries (pure Javascript/HTML5).
-* Fully understand all rules of chess.
-  * Generate a list of all legal moves for any chess position.
-  * Verify whether an externally-supplied move is legal or not.
-  * Make and unmake moves on the board.
-  * Determine whether the game has ended by
+* Fully understands all rules of chess.
+  * Generates a list of all legal moves for any chess position.
+  * Verifies whether an externally-supplied move is legal or not.
+  * Makes and unmakes moves on the board.
+  * Determines whether the game has ended by
     * Checkmate
-    * Stalemate
-    * Draw by threefold repetition
-    * Draw by 50-move rule
-    * Draw by insufficient material
+    * Unambiguous [draws](https://en.wikipedia.org/wiki/Draw_(chess)), i.e., other than by agreement (that's up to the user interface).
+    * Draw by Stalemate.
+    * Draw by [threefold repetition](https://en.wikipedia.org/wiki/Threefold_repetition).
+    * Draw by [50-move rule](Fifty-move rule).
+    * Draw by insufficient material: neither player has material to checkmate the other.
 * [Forsyth–Edwards Notation](https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation) (FEN): parse FEN into a chess position, and for any chess position, generate FEN.
 * [Portable Game Notation](https://en.wikipedia.org/wiki/Portable_Game_Notation) (PGN): parse PGN from a game to reconstruct the game state, and generate PGN from a board position.
 
