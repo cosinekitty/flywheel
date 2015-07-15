@@ -27,12 +27,14 @@
     SOFTWARE.
 */
 /// <reference path="flywheel.ts"/>
-importScripts('flywheel.js');
-onmessage = function (message) {
-    switch (message.data.verb) {
-        case 'ping':
-            postMessage('pong', null);
-            break;
-    }
-};
+if (typeof importScripts === 'function') {
+    importScripts('flywheel.js');
+    onmessage = function (message) {
+        switch (message.data.verb) {
+            case 'ping':
+                postMessage('pong', null);
+                break;
+        }
+    };
+}
 //# sourceMappingURL=flyworker.js.map

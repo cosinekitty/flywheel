@@ -29,12 +29,14 @@
 
 /// <reference path="flywheel.ts"/>
 
-importScripts('flywheel.js');
+if (typeof importScripts === 'function') {
+    importScripts('flywheel.js');
 
-onmessage = function (message: MessageEvent) {
-    switch (message.data.verb) {
-        case 'ping':
-            postMessage('pong', null);
-            break;
+    onmessage = function (message:MessageEvent) {
+        switch (message.data.verb) {
+            case 'ping':
+                postMessage('pong', null);
+                break;
+        }
     }
 }
