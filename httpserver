@@ -1,0 +1,11 @@
+#!/bin/bash
+#
+#   Use this script enable running unit test scripts to get around
+#   problems with browsers not allowing Javascript workers to be run
+#   from the local filesystem.
+#
+#   Then launch the test in your browser using the following URL:
+#
+#   http://localhost:5432/tests/board/
+#
+python -m SimpleHTTPServer 5432
