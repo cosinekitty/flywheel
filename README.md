@@ -4,7 +4,7 @@ Flywheel is a pure Javascript chess engine (still in development).
 
 ## Running unit tests
 
-The unit tests exercise the Flywheel engine.  Some of the tests require Javascript Workers, which means most browsers,  for security reasons, will refuse to run them directly from the local filesystem.  The easiest way to run the tests is to use Python 2.7 to serve content directly from the cloned repository:
+The unit tests exercise the Flywheel engine.  Some of the tests require Javascript Workers, which means most browsers,  for security reasons, will refuse to run them directly from the local filesystem.  Other tests will run fine from the local filesystem.  The easiest way to run all the tests consistently is to run a local http server.  I use Python 2.7 to serve content directly from the cloned repository, though there are many other ways.
 
 ````
 cd ~
@@ -14,7 +14,9 @@ python -m SimpleHTTPServer 5432
 ````
 
 Then you can run the unit tests in your browser: 
-<a href="http://localhost:5432/tests/board/">http://localhost:5432/tests/board/</a>
+
+* <a href="http://localhost:5432/tests/board/">http://localhost:5432/tests/board/</a>
+* <a href="http://localhost:5432/tests/worker/">http://localhost:5432/tests/worker/</a>
 
 Here is what a successful test looks like:
 
