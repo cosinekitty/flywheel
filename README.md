@@ -15,3 +15,5 @@ python -m SimpleHTTPServer 5432
 
 Then you can run the unit tests in your browser: 
 <a href="http://localhost:5432/tests/board/">http://localhost:5432/tests/board/</a>
+
+![Successful unit test](https://raw.githubusercontent.com/cosinekitty/flywheel/master/image/flywheel-unit-test-pass.png)
