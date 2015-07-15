@@ -177,12 +177,21 @@ module Flywheel {
         public blackCanCastleKingSide: boolean;
         public blackCanCastleQueenSide: boolean;
         public epCaptureOffset: number;     // if the move was an en passant capture, where the pawn was removed
+        public epTarget: number;            // if previous move was pawn pushed 2 squares, the square it hopped over; otherwise 0
         public castlingRookSource: number;  // if castling move, where the rook came from
         public castlingRookDest: number;    // if castling move, where the rook landed
         public playerWasInCheck: boolean;
-        public lastCapOrPawnPly: number;
+        public numQuietPlies: number;
 
-        public constructor(move:Move, capture:Square, wkc:boolean, wqc:boolean, bkc:boolean, bqc:boolean, check:boolean, lastCapPawn:number) {
+        public constructor(move:Move,
+                           capture:Square,
+                           wkc:boolean,
+                           wqc:boolean,
+                           bkc:boolean,
+                           bqc:boolean,
+                           check:boolean,
+                           numQuietPlies:number,
+                           epTarget:number) {
             this.move = move;
             this.capture = capture;
             this.whiteCanCastleKingSide = wkc;
@@ -190,7 +199,8 @@ module Flywheel {
             this.blackCanCastleKingSide = bkc;
             this.blackCanCastleQueenSide = bqc;
             this.playerWasInCheck = check;
-            this.lastCapOrPawnPly = lastCapPawn;
+            this.numQuietPlies = numQuietPlies;
+            this.epTarget = epTarget;
         }
     }
 
@@ -335,7 +345,10 @@ module Flywheel {
         private currentPlayerInCheck: boolean;
         private addMoves: { [square:number]: (movelist:Move[], source:number) => void };      // table of move generator functions for each kind of piece
         private moveStack: MoveState[];
-        private lastCapOrPawnPly: number;
+        private numQuietPlies: number;  // number of plies that have elapsed without a capture or a pawn move
+        private fullMoveNumber: number; // starts at 1 for beginning of game, incremented after each Black move
+        private epTarget: number;       // board offset behind a pawn just pushed 2 squares, otherwise 0
+        private initialFen: string;     // if defined, the FEN for the starting position
 
         public constructor() {
             this.Init();
@@ -362,8 +375,8 @@ module Flywheel {
             return this.sideToMove === Side.Black;
         }
 
-        public NumTurnsPlayed(): number {
-            return this.moveStack.length;
+        public CanPopMove():boolean {
+            return this.moveStack.length > 0;
         }
 
         public LegalMoves(): Move[] {
@@ -665,28 +678,31 @@ module Flywheel {
                 this.blackCanCastleKingSide,
                 this.blackCanCastleQueenSide,
                 this.currentPlayerInCheck,
-                this.lastCapOrPawnPly);
+                this.numQuietPlies,
+                this.epTarget);
 
             this.moveStack.push(info);
 
+            ++this.numQuietPlies;   // assume this is a quiet ply unless we see a pawn move or a capture
+
             this.currentPlayerInCheck = undefined;  // we no longer know if the current player is in check
+            this.epTarget = 0;      // assume no en passant target unless this is a pawn moving 2 squares
 
             if (capture !== Square.Empty) {
-                // Update the halfmove clock on any capture.
-                this.lastCapOrPawnPly = move.ply;
+                this.numQuietPlies = 0;
             }
 
             // Now check for the special cases: castling, en passant, pawn promotion.
             if (move.prom !== NeutralPiece.Empty) {
                 // Pawn promotion. Override what we put in the destination square.
                 this.square[move.dest] = Utility.SidePieces[this.sideToMove][move.prom];
-                // A pawn is moving, so update the halfmove clock.
-                this.lastCapOrPawnPly = move.ply;
+                // A pawn is moving, so reset the quiet ply counter.
+                this.numQuietPlies = 0;
             } else {
                 let neutralPiece:NeutralPiece = Utility.Neutral[piece];
                 if (neutralPiece === NeutralPiece.Pawn) {
-                    // A pawn is moving, so update the halfmove clock.
-                    this.lastCapOrPawnPly = move.ply;
+                    // A pawn is moving, so reset the quiet ply counter.
+                    this.numQuietPlies = 0;
                     // Is this an en passant capture?
                     if (capture === Square.Empty) {
                         if (dir === Direction.NorthEast || dir === Direction.SouthEast) {
@@ -699,6 +715,14 @@ module Flywheel {
                             // Assume this is an en passant capture.
                             info.epCaptureOffset = move.source + Direction.West;
                             this.square[info.epCaptureOffset] = Square.Empty;
+                        } else if (dir === 2*Direction.North) {
+                            // A White pawn is moving 2 squares forward.
+                            // This might indicate an en passant opportunity for Black's next turn.
+                            this.epTarget = move.source + Direction.North;
+                        } else if (dir === 2*Direction.South) {
+                            // A Black pawn is moving 2 squares forward.
+                            // This might indicate an en passant opportunity for White's next turn.
+                            this.epTarget = move.source + Direction.South;
                         }
                     }
                 } else if (neutralPiece === NeutralPiece.King) {
@@ -752,6 +776,11 @@ module Flywheel {
                 case 98: this.blackCanCastleKingSide  = false;  break;
             }
 
+            // After each move by Black, we increment the full move number.
+            if (this.sideToMove === Side.Black) {
+                ++this.fullMoveNumber;
+            }
+
             // Toggle the side to move...
             let swap:Side = this.sideToMove;
             this.sideToMove = this.enemy;
@@ -772,6 +801,11 @@ module Flywheel {
             this.sideToMove = this.enemy;
             this.enemy = swap;
 
+            // Decrement the full move number each time we undo a move by Black.
+            if (this.sideToMove === Side.Black) {
+                --this.fullMoveNumber;
+            }
+
             // Restore castling flags.
             this.whiteCanCastleKingSide  = info.whiteCanCastleKingSide;
             this.whiteCanCastleQueenSide = info.whiteCanCastleQueenSide;
@@ -789,7 +823,7 @@ module Flywheel {
             this.currentPlayerInCheck = info.playerWasInCheck;
 
             // Put the pawn/capture halfmove clock back where it was.
-            this.lastCapOrPawnPly = info.lastCapOrPawnPly;
+            this.numQuietPlies = info.numQuietPlies;
 
             if (info.move.prom === NeutralPiece.Empty) {
                 // This move is NOT a pawn promotion.
@@ -814,6 +848,9 @@ module Flywheel {
                 this.square[info.castlingRookSource] = Utility.SidePieces[this.sideToMove][NeutralPiece.Rook];
                 this.square[info.castlingRookDest] = Square.Empty;
             }
+
+            // Restore en passant state.
+            this.epTarget = info.epTarget;
 
             return info.move;   // return the popped move back to the caller, for algorithmic symmetry.
         }
@@ -874,18 +911,6 @@ module Flywheel {
                 }
             }
 
-            var epOpportunityTarget:number;
-            if (this.moveStack.length > 0) {
-                let prev:Move = this.moveStack[this.moveStack.length - 1].move;
-                if (prev.dest - prev.source === -2*dir) {
-                    if (Utility.Neutral[this.square[prev.dest]] === NeutralPiece.Pawn) {
-                        // The opponent just pushed a pawn 2 squares forward.
-                        // Remember where the pawn landed so we can see if it is capturable via en passant.
-                        epOpportunityTarget = prev.dest;
-                    }
-                }
-            }
-
             // Check for capturing to the east.
             var edest:number = source + dir + Direction.East;
             if (Utility.PieceSide[this.square[edest]] === this.enemy) {
@@ -899,7 +924,7 @@ module Flywheel {
                     // Normal capture - not a promotion.
                     movelist.push(new Move(source, edest));
                 }
-            } else if (source + Direction.East === epOpportunityTarget) {
+            } else if (edest === this.epTarget) {
                 // En passant capture to the east.
                 movelist.push(new Move(source, edest));
             }
@@ -917,7 +942,7 @@ module Flywheel {
                     // Normal capture - not a promotion.
                     movelist.push(new Move(source, wdest));
                 }
-            } else if (source + Direction.West === epOpportunityTarget) {
+            } else if (wdest === this.epTarget) {
                 // En passant capture to the west.
                 movelist.push(new Move(source, wdest));
             }
@@ -1057,14 +1082,17 @@ module Flywheel {
         }
 
         public Reset(): void {
+            this.initialFen = undefined;
             this.sideToMove = Side.White;
             this.enemy = Side.Black;
             this.moveStack = [];
-            this.lastCapOrPawnPly = -1;
+            this.numQuietPlies = 0;
+            this.fullMoveNumber = 1;
             this.whiteCanCastleKingSide  = true;
             this.whiteCanCastleQueenSide = true;
             this.blackCanCastleKingSide  = true;
             this.blackCanCastleQueenSide = true;
+            this.epTarget = 0;
 
             let x:number = Board.Offset('a1');
             this.square[x++] = Square.WhiteRook;
@@ -1129,12 +1157,17 @@ module Flywheel {
             if (this.whiteKingOfs === undefined) {
                 throw 'There is no White King on the board.';
             }
+
             if (this.blackKingOfs === undefined) {
                 throw 'There is no Black King on the board.';
             }
+
+            if (this.IsPlayerInCheck(this.enemy)) {
+                throw 'Illegal position: side not having the turn is in check.';
+            }
         }
 
-        public ForsythEdwardsNotation(): string {
+        public GetForsythEdwardsNotation(): string {
             let fen:string = '';
 
             /*
@@ -1240,23 +1273,10 @@ module Flywheel {
                 a square name even if there is no pawn of the opposing side that may
                 immediately execute the en passant capture.
             */
-            let found_ep_target:boolean = false;
-            if (this.moveStack.length > 0) {
-                let prev:Move = this.moveStack[this.moveStack.length - 1].move;
-                let dir:number = prev.dest - prev.source;
-                if ((this.square[prev.dest] === Square.WhitePawn) && (dir === 2 * Direction.North)) {
-                    // A white pawn was just pushed 2 squares. Record ep target as the square it hopped over.
-                    found_ep_target = true;
-                    fen += Board.AlgTable[prev.source + Direction.North];
-                } else if ((this.square[prev.dest] === Square.BlackPawn) && (dir === 2 * Direction.South)) {
-                    // A black pawn was just pushed 2 squares. Record ep target as the square it hopped over.
-                    found_ep_target = true;
-                    fen += Board.AlgTable[prev.source + Direction.South];
-                }
-            }
-
-            if (!found_ep_target) {
+            if (this.epTarget === 0) {
                 fen += '-';
+            } else {
+                fen += Board.Algebraic(this.epTarget);
             }
 
             /*
@@ -1266,8 +1286,7 @@ module Flywheel {
                 This number is the count of halfmoves (or ply) since the last pawn advance or
                 capturing move.  This value is used for the fifty move draw rule.
             */
-            let quietPlies:number = this.moveStack.length - this.lastCapOrPawnPly - 1;
-            fen += ' ' + quietPlies.toFixed() + ' ';
+            fen += ' ' + this.numQuietPlies.toFixed() + ' ';
 
             /*
                 16.1.3.6: Fullmove number
@@ -1276,9 +1295,136 @@ module Flywheel {
                 This will have the value "1" for the first move of a game for both White and
                 Black.  It is incremented by one immediately after each move by Black.
             */
-            fen += (1 + (this.moveStack.length >> 1)).toFixed();
+            fen += this.fullMoveNumber.toFixed();
 
             return fen;
+        }
+
+        public SetForsythEdwardsNotation(fen:string): void {
+            // Example FEN:
+            // 3qr2k/pbpp2pp/1p5N/3Q2b1/2P1P3/P7/1PP2PPP/R4RK1 w - - 0 1
+            let field:string[] = fen.split(' ');
+            if (field.length != 6) {
+                throw "FEN must have 6 space-delimited fields.";
+            }
+            let rowArray:string[] = field[0].split('/');
+            if (rowArray.length != 8) {
+                throw "FEN board must have 8 slash-delimited rows.";
+            }
+
+            let newsq:Square[] = Board.MakeBoardArray();
+            for (let y=0; y < 8; ++y) {
+                let row:string = rowArray[7-y];    // rows are stored starting with Black's side of the board
+                let x=0;
+                for (let i=0; i < row.length; ++i) {
+                    let repeat:number = 1;
+                    let piece:Square = Square.Empty;
+                    switch (row[i]) {
+                        case '1':   repeat = 1;  break;
+                        case '2':   repeat = 2;  break;
+                        case '3':   repeat = 3;  break;
+                        case '4':   repeat = 4;  break;
+                        case '5':   repeat = 5;  break;
+                        case '6':   repeat = 6;  break;
+                        case '7':   repeat = 7;  break;
+                        case '8':   repeat = 8;  break;
+
+                        case 'p':   piece = Square.BlackPawn;       break;
+                        case 'n':   piece = Square.BlackKnight;     break;
+                        case 'b':   piece = Square.BlackBishop;     break;
+                        case 'r':   piece = Square.BlackRook;       break;
+                        case 'q':   piece = Square.BlackQueen;      break;
+                        case 'k':   piece = Square.BlackKing;       break;
+
+                        case 'P':   piece = Square.WhitePawn;       break;
+                        case 'N':   piece = Square.WhiteKnight;     break;
+                        case 'B':   piece = Square.WhiteBishop;     break;
+                        case 'R':   piece = Square.WhiteRook;       break;
+                        case 'Q':   piece = Square.WhiteQueen;      break;
+                        case 'K':   piece = Square.WhiteKing;       break;
+
+                        default:    throw 'Invalid character in FEN board';
+                    }
+                    while (repeat > 0) {
+                        if (x > 7) {
+                            throw 'Too many squares in FEN row';
+                        }
+                        newsq[21 + (10*y) + x] = piece;
+                        ++x;
+                        --repeat;
+                    }
+                }
+                if (x !== 8) {
+                    throw 'There must be exactly 8 squares on each row of the FEN.';
+                }
+            }
+
+            let friend:Side;
+            let enemy:Side;
+            switch (field[1]) {
+                case 'w':
+                    friend = Side.White;
+                    enemy  = Side.Black;
+                    break;
+
+                case 'b':
+                    friend = Side.Black;
+                    enemy  = Side.White;
+                    break;
+
+                default:
+                    throw 'Side specifier must be "w" or "b" in FEN.';
+            }
+
+            // Parse castle enable flags.
+            let castling = field[2];
+            if (castling.length === 0 || !/-|K?Q?k?q?/.test(castling)) {
+                throw 'Invalid castling specifier in FEN.';
+            }
+            let wk:boolean = (castling.indexOf('K') >= 0);
+            let wq:boolean = (castling.indexOf('Q') >= 0);
+            let bk:boolean = (castling.indexOf('k') >= 0);
+            let bq:boolean = (castling.indexOf('q') >= 0);
+
+            // Parse en passant target offset.
+            let ep:number = 0;
+            if (field[3] !== '-') {
+                if (/[a-h][36]/.test(field[3])) {
+                    ep = Board.Offset(field[3]);
+                } else {
+                    throw 'Invalid en passant target in FEN.';
+                }
+            }
+
+            // Parse halfmove clock.
+            let quietPlies = parseInt(field[4], 10);
+            if (isNaN(quietPlies) || quietPlies < 0 || quietPlies > 100) {
+                throw 'Invalid halfmove clock (number of quiet plies) in FEN.';
+            }
+
+            // Parse fullmove number.
+            let fullMoveNumber = parseInt(field[5], 10);
+            if (isNaN(fullMoveNumber) || fullMoveNumber < 1) {
+                throw 'Invalid fullmove number in FEN.';
+            }
+
+            // If we get here, it means the FEN is presumed valid.
+            // Mutate the board based on what we found.
+
+            this.square = newsq;
+            this.initialFen = fen;
+            this.whiteCanCastleKingSide  = wk;
+            this.whiteCanCastleQueenSide = wq;
+            this.blackCanCastleKingSide  = bk;
+            this.blackCanCastleQueenSide = bq;
+            this.moveStack = [];
+            this.sideToMove = friend;
+            this.enemy = enemy;
+            this.epTarget = ep;
+            this.numQuietPlies = quietPlies;
+            this.fullMoveNumber = fullMoveNumber;
+
+            this.Update();
         }
 
         private static IsLegal(move:Move, legalMoveList:Move[]):boolean {

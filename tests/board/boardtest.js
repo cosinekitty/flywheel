@@ -21,10 +21,31 @@ var FlyBoardTest;
                 return;
             if (!Test.Castling(board))
                 return;
+            if (!Test.FenTest())
+                return;
             if (!Test.GameTests(board))
                 return;
             summary.innerText = 'All tests passed.';
             summary.className = 'TestSummary PassedTest';
+        };
+        Test.FenTest = function () {
+            var span = window.document.getElementById('SetFenText');
+            var board = new Flywheel.Board();
+            var fenlist = [
+                '3qr2k/pbpp2pp/1p5N/3Q2b1/2P1P3/P7/1PP2PPP/R4RK1 w - - 0 1'
+            ];
+            for (var _i = 0; _i < fenlist.length; _i++) {
+                var fen = fenlist[_i];
+                board.SetForsythEdwardsNotation(fen);
+                var check = board.GetForsythEdwardsNotation();
+                if (check !== fen) {
+                    span.innerText = 'Set FEN to "' + fen + '", but got back "' + check + '"';
+                    return false;
+                }
+            }
+            span.innerText = 'OK: checked ' + fenlist.length + ' FEN strings.';
+            span.className = 'PassedTest';
+            return true;
         };
         Test.InitBoard = function () {
             // Construct a chess board object.
@@ -160,7 +181,7 @@ var FlyBoardTest;
         Test.Castling = function (board) {
             var span = window.document.getElementById('CastlingText');
             span.className = 'FailedTest';
-            var fen1 = board.ForsythEdwardsNotation();
+            var fen1 = board.GetForsythEdwardsNotation();
             if (fen1 !== 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1') {
                 span.innerText = 'Incorrect starting FEN: ' + fen1;
                 return false;
@@ -172,7 +193,7 @@ var FlyBoardTest;
             board.PushNotation('f1b5'); // 3. Bb5
             board.PushNotation('g8f6'); //          Nf6
             board.PushNotation('O-O'); // 4. O-O
-            var fen2 = board.ForsythEdwardsNotation();
+            var fen2 = board.GetForsythEdwardsNotation();
             if (fen2 !== 'r1bqkb1r/pppp1ppp/2n2n2/1B2p3/4P3/5N2/PPPP1PPP/RNBQ1RK1 b kq - 5 4') {
                 span.innerText = 'Incorrect post-castling FEN: ' + fen2;
                 return false;
@@ -216,9 +237,9 @@ var FlyBoardTest;
             return null;
         };
         Test.VerifyLegalMoves = function (board, span, legal) {
-            var fen1 = board.ForsythEdwardsNotation();
+            var fen1 = board.GetForsythEdwardsNotation();
             var calcMoves = board.LegalMoves();
-            var fen2 = board.ForsythEdwardsNotation();
+            var fen2 = board.GetForsythEdwardsNotation();
             if (fen1 !== fen2) {
                 span.innerText = '(Step ' + Test.StepCount + ') Board corruption: before=[' + fen1 + '], after=[' + fen2 + ']';
                 return false;
@@ -230,12 +251,12 @@ var FlyBoardTest;
             }
             var missing = Test.FindMissingMove(calcLegal, legal);
             if (missing) {
-                span.innerText = '(Step ' + Test.StepCount + ') Missing legal move ' + missing + ' in position ' + board.ForsythEdwardsNotation();
+                span.innerText = '(Step ' + Test.StepCount + ') Missing legal move ' + missing + ' in position ' + board.GetForsythEdwardsNotation();
                 return false;
             }
             missing = Test.FindMissingMove(legal, calcLegal);
             if (missing) {
-                span.innerText = '(Step ' + Test.StepCount + ') Extraneous legal move: ' + missing + ' in position ' + board.ForsythEdwardsNotation();
+                span.innerText = '(Step ' + Test.StepCount + ') Extraneous legal move: ' + missing + ' in position ' + board.GetForsythEdwardsNotation();
                 return false;
             }
             return true;
@@ -252,7 +273,7 @@ var FlyBoardTest;
                     return false;
                 // move, fen, check, mobile, draw, legal
                 board.PushNotation(turn.move);
-                var calcfen = board.ForsythEdwardsNotation();
+                var calcfen = board.GetForsythEdwardsNotation();
                 if (calcfen !== turn.fen) {
                     span.innerText = 'FEN mismatch: "' + calcfen + '" != "' + turn.fen + '"';
                     return false;
