@@ -27,19 +27,49 @@
     SOFTWARE.
 */
 
+/// <reference path="../../src/flywheel.ts"/>
+
 module FlyWorkerTest {
     export class Test {
         public static Run():void {
+            Test.Ping();
+            Test.MateSearches();
+        }
+
+        private static MakeWorker():Worker {
+            return new Worker('../../src/flyworker.js');
+        }
+
+        private static Ping():void {
             let span = window.document.getElementById('PingText');
             span.innerText = 'Sending message to worker';
-            let worker = new Worker('../../src/flyworker.js');
+            let worker = Test.MakeWorker();
             worker.onmessage = function(response) {
-                if (response.data === 'pong') {
-                    span.innerText = 'OK';
+                if (response.data.status === 'pong') {
+                    console.log('Ping received ' + response.data.tag);
+                    span.innerText = 'OK: ' + response.data.tag;
                     span.className = 'PassedTest';
                 }
             }
-            worker.postMessage({verb:'ping'});
+            worker.postMessage({verb:'ping', tag:'1'});
+            worker.postMessage({verb:'ping', tag:'2'});
+            worker.postMessage({verb:'ping', tag:'3'});
+        }
+
+        private static MateSearches():void {
+            let worker = Test.MakeWorker();
+            worker.onmessage = function(response) {
+                console.log(response.data);
+                let span = window.document.getElementById(response.data.origin.spanid);
+                let answer = response.data.bestMove;
+                if (answer === response.data.origin.correct) {
+                    span.innerText = 'OK: found ' + answer;
+                    span.className = 'PassedTest';
+                } else {
+                    span.innerText = 'FAILURE: expected ' + response.data.origin.correct + ' but found ' + answer;
+                }
+            }
+            worker.postMessage({verb:'MateSearch', limit:1, game:'e2e4 f7f6 d2d4 g7g5', correct:'d1h5', spanid:'MateText001'});
         }
     }
 }

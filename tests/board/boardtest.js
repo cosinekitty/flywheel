@@ -113,7 +113,7 @@ var FlyBoardTest;
                 'e8': Flywheel.Square.BlackKing,
                 'f8': Flywheel.Square.BlackBishop,
                 'g8': Flywheel.Square.BlackKnight,
-                'h8': Flywheel.Square.BlackRook,
+                'h8': Flywheel.Square.BlackRook
             };
             var numSquaresChecked = 0;
             for (var alg in contents) {

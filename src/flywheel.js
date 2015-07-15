@@ -130,6 +130,17 @@ var Flywheel;
         Utility.IsInitialized = Utility.StaticInit();
         return Utility;
     })();
+    (function (Score) {
+        Score[Score["Draw"] = 0] = "Draw";
+        Score[Score["Invalid"] = -2100000000] = "Invalid";
+        Score[Score["NegInf"] = -2000000000] = "NegInf";
+        Score[Score["PosInf"] = 2000000000] = "PosInf";
+        Score[Score["CheckmateLoss"] = -1100000000] = "CheckmateLoss";
+        Score[Score["CheckmateWin"] = 1100000000] = "CheckmateWin";
+        Score[Score["ForcedLoss"] = -1000000000] = "ForcedLoss";
+        Score[Score["ForcedWin"] = 1000000000] = "ForcedWin";
+    })(Flywheel.Score || (Flywheel.Score = {}));
+    var Score = Flywheel.Score;
     var Move = (function () {
         function Move(source, dest, prom, score, ply) {
             if (prom === void 0) { prom = NeutralPiece.Empty; }
@@ -237,7 +248,7 @@ var Flywheel;
         DrawType[DrawType["Stalemate"] = 0] = "Stalemate";
         DrawType[DrawType["InsufficientMaterial"] = 1] = "InsufficientMaterial";
         DrawType[DrawType["ThreefoldRepetition"] = 2] = "ThreefoldRepetition";
-        DrawType[DrawType["FiftyMoveRule"] = 3] = "FiftyMoveRule"; // 50 moves without a capture or a pawn advance
+        DrawType[DrawType["FiftyMoveRule"] = 3] = "FiftyMoveRule";
     })(Flywheel.DrawType || (Flywheel.DrawType = {}));
     var DrawType = Flywheel.DrawType;
     var GameResult = (function () {
@@ -335,11 +346,18 @@ var Flywheel;
             }
             return movelist;
         };
+        Board.prototype.GetNonStalemateDrawType = function () {
+            // FIXFIXFIX - detect draws by threefold repetition
+            // FIXFIXFIX - detect draws by insufficient material
+            // FIXFIXFIX - detect draws by 50-move rule
+            return null; // non-stalemate draw not detected
+        };
         Board.prototype.GetGameResult = function () {
             if (this.CurrentPlayerCanMove()) {
-                // FIXFIXFIX - detect draws by threefold repetition
-                // FIXFIXFIX - detect draws by insufficient material
-                // FIXFIXFIX - detect draws by 50-move rule
+                var drawType = this.GetNonStalemateDrawType();
+                if (drawType !== null) {
+                    return new GameResult(GameStatus.Draw, drawType);
+                }
                 return new GameResult(GameStatus.InProgress);
             }
             if (this.IsCurrentPlayerInCheck()) {
@@ -603,6 +621,13 @@ var Flywheel;
                 return false; // we want the topmost recursive caller to report an error on the original notation
             }
             throw 'Move notation is not valid/legal: "' + notation + '"';
+        };
+        Board.prototype.PushHistory = function (history) {
+            var notationArray = history.split(' ');
+            for (var _i = 0; _i < notationArray.length; _i++) {
+                var notation = notationArray[_i];
+                this.PushNotation(notation);
+            }
         };
         Board.prototype.PushMove = function (move) {
             // Before risking corruption of the board state, verify
@@ -1349,5 +1374,95 @@ var Flywheel;
         return Board;
     })();
     Flywheel.Board = Board;
+    //-------------------------------------------------------------------------------------------------------
+    var BestPath = (function () {
+        function BestPath() {
+            this.move = [];
+            this.score = Score.NegInf;
+        }
+        BestPath.prototype.Clone = function () {
+            var copy = new BestPath();
+            copy.score = this.score;
+            for (var _i = 0, _a = this.move; _i < _a.length; _i++) {
+                var m = _a[_i];
+                copy.move.push(m.Clone());
+            }
+            return copy;
+        };
+        BestPath.prototype.Truncate = function () {
+            this.move.length = 0;
+        };
+        return BestPath;
+    })();
+    Flywheel.BestPath = BestPath;
+    var Thinker = (function () {
+        function Thinker() {
+        }
+        Thinker.MateSearch = function (board, limit) {
+            // Search for a forced checkmate with the specified search limit.
+            // First we must determine if the game is over, either because there
+            // are no legal moves, or because of the various types of non-stalemate draws.
+            var bestPath = new BestPath();
+            // FIXFIXFIX: change to incremental deepening.
+            // FIXFIXFIX: omit moves that lead to forced loss from further consideration.
+            bestPath.score = Thinker.InternalMateSearch(board, limit, 0, bestPath, Score.NegInf, Score.PosInf);
+            return bestPath;
+        };
+        Thinker.InternalMateSearch = function (board, limit, depth, bestPath, alpha, beta) {
+            bestPath.Truncate();
+            if (depth >= limit) {
+                // Recursion cutoff: quickly determine game result and return corresponding score.
+                if (board.IsCurrentPlayerInCheck() && !board.CurrentPlayerCanMove()) {
+                    return Score.CheckmateLoss;
+                }
+                return Score.Draw;
+            }
+            var legal = board.LegalMoves();
+            if (legal.length === 0) {
+                // Either checkmate or stalemate, depending on whether the current player is in check.
+                // Losing by checkmate is "better" the further it happens in the future.
+                // This motivates avoiding being checkmated as long as possible,
+                // and it also motivates checkmating the opponent as soon as possible.
+                // Without this adjustment, the Thinker might indefinitely postpone a forced win!
+                return board.IsCurrentPlayerInCheck() ? (Score.CheckmateLoss + depth) : Score.Draw;
+            }
+            if (board.GetNonStalemateDrawType() !== null) {
+                // There are legal moves, but we found another type of draw like
+                // threefold repetition, insufficient material, etc.
+                return Score.Draw;
+            }
+            bestPath.score = Score.NegInf;
+            var bestScore = Score.NegInf;
+            var currPath = new BestPath();
+            for (var _i = 0; _i < legal.length; _i++) {
+                var move = legal[_i];
+                board.PushMove(move);
+                // Tricky: we negate the return value, flip and negate the alpha-beta window.
+                // This is a "negamax" search -- whatever is good for one player is bad for the other.
+                var score = -Thinker.InternalMateSearch(board, limit, 1 + depth, currPath, -beta, -alpha);
+                board.PopMove();
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestPath.score = score;
+                    bestPath.move.length = 0;
+                    if (score >= beta) {
+                        // PRUNE: opponent has better choices than the move that led to this position.
+                        break;
+                    }
+                    bestPath.move.push(move);
+                    for (var _a = 0, _b = currPath.move; _a < _b.length; _a++) {
+                        var futureMove = _b[_a];
+                        bestPath.move.push(futureMove);
+                    }
+                }
+                if (score > alpha) {
+                    alpha = score;
+                }
+            }
+            return bestScore;
+        };
+        return Thinker;
+    })();
+    Flywheel.Thinker = Thinker;
 })(Flywheel || (Flywheel = {}));
 //# sourceMappingURL=flywheel.js.map

@@ -26,22 +26,49 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 */
+/// <reference path="../../src/flywheel.ts"/>
 var FlyWorkerTest;
 (function (FlyWorkerTest) {
     var Test = (function () {
         function Test() {
         }
         Test.Run = function () {
+            Test.Ping();
+            Test.MateSearches();
+        };
+        Test.MakeWorker = function () {
+            return new Worker('../../src/flyworker.js');
+        };
+        Test.Ping = function () {
             var span = window.document.getElementById('PingText');
             span.innerText = 'Sending message to worker';
-            var worker = new Worker('../../src/flyworker.js');
+            var worker = Test.MakeWorker();
             worker.onmessage = function (response) {
-                if (response.data === 'pong') {
-                    span.innerText = 'OK';
+                if (response.data.status === 'pong') {
+                    console.log('Ping received ' + response.data.tag);
+                    span.innerText = 'OK: ' + response.data.tag;
                     span.className = 'PassedTest';
                 }
             };
-            worker.postMessage({ verb: 'ping' });
+            worker.postMessage({ verb: 'ping', tag: '1' });
+            worker.postMessage({ verb: 'ping', tag: '2' });
+            worker.postMessage({ verb: 'ping', tag: '3' });
+        };
+        Test.MateSearches = function () {
+            var worker = Test.MakeWorker();
+            worker.onmessage = function (response) {
+                console.log(response.data);
+                var span = window.document.getElementById(response.data.origin.spanid);
+                var answer = response.data.bestMove;
+                if (answer === response.data.origin.correct) {
+                    span.innerText = 'OK: found ' + answer;
+                    span.className = 'PassedTest';
+                }
+                else {
+                    span.innerText = 'FAILURE: expected ' + response.data.origin.correct + ' but found ' + answer;
+                }
+            };
+            worker.postMessage({ verb: 'MateSearch', limit: 1, game: 'e2e4 f7f6 d2d4 g7g5', correct: 'd1h5', spanid: 'MateText001' });
         };
         return Test;
     })();

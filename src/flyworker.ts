@@ -29,13 +29,40 @@
 
 /// <reference path="flywheel.ts"/>
 
+module FlyWorker {
+    export class Worker {
+        public static MateSearch(game:string, limit:number):any {
+            let board:Flywheel.Board = new Flywheel.Board();
+            board.PushHistory(game);
+            let bestPath:Flywheel.BestPath = Flywheel.Thinker.MateSearch(board, limit);
+            return bestPath;
+        }
+    }
+}
+
 if (typeof importScripts === 'function') {
     importScripts('flywheel.js');
 
     onmessage = function (message:MessageEvent) {
         switch (message.data.verb) {
             case 'ping':
-                postMessage('pong', null);
+                postMessage({origin:message.data, status:'pong', tag:message.data.tag}, null);
+                break;
+
+            case 'MateSearch':  // {verb:'MateSearch', game:'e2e4 e5e7 ...', limit:5}
+                let bestPath:Flywheel.BestPath = FlyWorker.Worker.MateSearch(message.data.game, message.data.limit);
+                let algpath = '';
+                let algmove = '';
+                if (bestPath.move.length > 0) {
+                    algmove = bestPath.move[0].toString();
+                    for (let move of bestPath.move) {
+                        if (algpath !== '') {
+                            algpath += ' ';
+                        }
+                        algpath += move.toString();
+                    }
+                }
+                postMessage({origin:message.data, bestPath:algpath, bestMove:algmove, score:bestPath.score}, null);
                 break;
         }
     }

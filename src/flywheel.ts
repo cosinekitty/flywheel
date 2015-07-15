@@ -125,11 +125,22 @@ module Flywheel {
         }
     }
 
+    export enum Score {
+        Draw            =           0,
+        Invalid         = -2100000000,
+        NegInf          = -2000000000,
+        PosInf          =  2000000000,
+        CheckmateLoss   = -1100000000,
+        CheckmateWin    =  1100000000,
+        ForcedLoss      = -1000000000,
+        ForcedWin       =  1000000000,
+    }
+
     export class Move {
         public source: number;          // the board offset of the piece being moved
         public dest: number;            // the board offset where the piece will end up
         public prom: NeutralPiece;      // if not a pawn promotion, Empty. otherwise, the piece being promoted to
-        public score: number;           // if not null, how good/bad the move is from the moving side's point of view
+        public score: Score;            // if not null, how good/bad the move is from the moving side's point of view
         public ply: number;             // sanity check that the move pertains to the same ply counter on the board
 
         public constructor(source:number, dest:number, prom:NeutralPiece = NeutralPiece.Empty, score:number = null, ply:number = null) {
@@ -235,14 +246,14 @@ module Flywheel {
         InProgress,
         Draw,
         WhiteWins,
-        BlackWins
+        BlackWins,
     }
 
     export enum DrawType {
         Stalemate,              // current player cannot move but is not in check
         InsufficientMaterial,   // neither side possesses material sufficient to deliver checkmate
         ThreefoldRepetition,    // same position occurred 3 times
-        FiftyMoveRule           // 50 moves without a capture or a pawn advance
+        FiftyMoveRule,          // 50 moves without a capture or a pawn advance
     }
 
     export class GameResult {
@@ -376,11 +387,19 @@ module Flywheel {
             return movelist;
         }
 
+        public GetNonStalemateDrawType(): DrawType {
+            // FIXFIXFIX - detect draws by threefold repetition
+            // FIXFIXFIX - detect draws by insufficient material
+            // FIXFIXFIX - detect draws by 50-move rule
+            return null;    // non-stalemate draw not detected
+        }
+
         public GetGameResult(): GameResult {
             if (this.CurrentPlayerCanMove()) {
-                // FIXFIXFIX - detect draws by threefold repetition
-                // FIXFIXFIX - detect draws by insufficient material
-                // FIXFIXFIX - detect draws by 50-move rule
+                let drawType:DrawType = this.GetNonStalemateDrawType();
+                if (drawType !== null) {
+                    return new GameResult(GameStatus.Draw, drawType);
+                }
                 return new GameResult(GameStatus.InProgress);
             }
 
@@ -611,6 +630,13 @@ module Flywheel {
             }
 
             throw 'Move notation is not valid/legal: "' + notation + '"';
+        }
+
+        public PushHistory(history:string):void {
+            let notationArray:string[] = history.split(' ');
+            for (let notation of notationArray) {
+                this.PushNotation(notation);
+            }
         }
 
         public PushMove(move: Move): void {
@@ -1400,6 +1426,100 @@ module Flywheel {
             }
 
             return pgn;
+        }
+    }
+
+    //-------------------------------------------------------------------------------------------------------
+    export class BestPath {
+        public move: Move[] = [];
+        public score: Score = Score.NegInf;
+
+        public Clone(): BestPath {
+            let copy:BestPath = new BestPath();
+            copy.score = this.score;
+            for (let m of this.move) {
+                copy.move.push(m.Clone());
+            }
+            return copy;
+        }
+
+        public Truncate():void {
+            this.move.length = 0;
+        }
+    }
+
+    export class Thinker {
+        public static MateSearch(board:Board, limit:number): BestPath {
+            // Search for a forced checkmate with the specified search limit.
+            // First we must determine if the game is over, either because there
+            // are no legal moves, or because of the various types of non-stalemate draws.
+            let bestPath:BestPath = new BestPath();
+
+            // FIXFIXFIX: change to incremental deepening.
+            // FIXFIXFIX: omit moves that lead to forced loss from further consideration.
+            bestPath.score = Thinker.InternalMateSearch(board, limit, 0, bestPath, Score.NegInf, Score.PosInf);
+
+            return bestPath;
+        }
+
+        private static InternalMateSearch(board:Board, limit:number, depth:number, bestPath:BestPath, alpha:Score, beta:Score): Score {
+            bestPath.Truncate();
+
+            if (depth >= limit) {
+                // Recursion cutoff: quickly determine game result and return corresponding score.
+                if (board.IsCurrentPlayerInCheck() && !board.CurrentPlayerCanMove()) {
+                    return Score.CheckmateLoss;
+                }
+                return Score.Draw;
+            }
+
+            let legal:Move[] = board.LegalMoves();
+            if (legal.length === 0) {
+                // Either checkmate or stalemate, depending on whether the current player is in check.
+                // Losing by checkmate is "better" the further it happens in the future.
+                // This motivates avoiding being checkmated as long as possible,
+                // and it also motivates checkmating the opponent as soon as possible.
+                // Without this adjustment, the Thinker might indefinitely postpone a forced win!
+                return board.IsCurrentPlayerInCheck() ? (Score.CheckmateLoss + depth) : Score.Draw;
+            }
+
+            if (board.GetNonStalemateDrawType() !== null) {
+                // There are legal moves, but we found another type of draw like
+                // threefold repetition, insufficient material, etc.
+                return Score.Draw;
+            }
+
+            bestPath.score = Score.NegInf;
+            let bestScore:Score = Score.NegInf;
+            let currPath:BestPath = new BestPath();
+
+            for (let move of legal) {
+                board.PushMove(move);
+                // Tricky: we negate the return value, flip and negate the alpha-beta window.
+                // This is a "negamax" search -- whatever is good for one player is bad for the other.
+                let score:Score = -Thinker.InternalMateSearch(board, limit, 1+depth, currPath, -beta, -alpha);
+                board.PopMove();
+
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestPath.score = score;
+                    bestPath.move.length = 0;
+                    if (score >= beta) {
+                        // PRUNE: opponent has better choices than the move that led to this position.
+                        break;
+                    }
+                    bestPath.move.push(move);
+                    for (let futureMove of currPath.move) {
+                        bestPath.move.push(futureMove);
+                    }
+                }
+
+                if (score > alpha) {
+                    alpha = score;
+                }
+            }
+
+            return bestScore;
         }
     }
 }

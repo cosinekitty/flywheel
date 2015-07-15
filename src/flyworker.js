@@ -27,12 +27,43 @@
     SOFTWARE.
 */
 /// <reference path="flywheel.ts"/>
+var FlyWorker;
+(function (FlyWorker) {
+    var Worker = (function () {
+        function Worker() {
+        }
+        Worker.MateSearch = function (game, limit) {
+            var board = new Flywheel.Board();
+            board.PushHistory(game);
+            var bestPath = Flywheel.Thinker.MateSearch(board, limit);
+            return bestPath;
+        };
+        return Worker;
+    })();
+    FlyWorker.Worker = Worker;
+})(FlyWorker || (FlyWorker = {}));
 if (typeof importScripts === 'function') {
     importScripts('flywheel.js');
     onmessage = function (message) {
         switch (message.data.verb) {
             case 'ping':
-                postMessage('pong', null);
+                postMessage({ origin: message.data, status: 'pong', tag: message.data.tag }, null);
+                break;
+            case 'MateSearch':
+                var bestPath = FlyWorker.Worker.MateSearch(message.data.game, message.data.limit);
+                var algpath = '';
+                var algmove = '';
+                if (bestPath.move.length > 0) {
+                    algmove = bestPath.move[0].toString();
+                    for (var _i = 0, _a = bestPath.move; _i < _a.length; _i++) {
+                        var move = _a[_i];
+                        if (algpath !== '') {
+                            algpath += ' ';
+                        }
+                        algpath += move.toString();
+                    }
+                }
+                postMessage({ origin: message.data, bestPath: algpath, bestMove: algmove, score: bestPath.score }, null);
                 break;
         }
     };
