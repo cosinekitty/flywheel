@@ -20,7 +20,7 @@ Flywheel is a pure Javascript chess engine (still in development).
     * Unambiguous [draws](https://en.wikipedia.org/wiki/Draw_(chess)), i.e., other than by agreement (that's up to the user interface).
     * Draw by Stalemate.
     * Draw by [threefold repetition](https://en.wikipedia.org/wiki/Threefold_repetition).
-    * Draw by [50-move rule](Fifty-move rule).
+    * Draw by [50-move rule](https://en.wikipedia.org/wiki/Fifty-move_rule).
     * Draw by insufficient material: neither player has material to checkmate the other.
 * [Forsyth–Edwards Notation](https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation) (FEN): parse FEN into a chess position, and for any chess position, generate FEN.
 * [Portable Game Notation](https://en.wikipedia.org/wiki/Portable_Game_Notation) (PGN): parse PGN from a game to reconstruct the game state, and generate PGN from a board position.
