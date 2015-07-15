@@ -1315,7 +1315,7 @@ var Flywheel;
                     var rankCount = 0;
                     for (var _a = 0; _a < compact.length; _a++) {
                         var cmove = compact[_a];
-                        var calg = Board.Algebraic[cmove.source];
+                        var calg = Board.Algebraic(cmove.source);
                         var cfile = calg.charAt(0);
                         var crank = calg.charAt(1);
                         if (cfile === file1) {

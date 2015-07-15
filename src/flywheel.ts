@@ -1368,7 +1368,7 @@ module Flywheel {
                     let fileCount:number = 0;
                     let rankCount:number = 0;
                     for (let cmove of compact) {
-                        let calg:string = Board.Algebraic[cmove.source];
+                        let calg:string = Board.Algebraic(cmove.source);
                         let cfile:string = calg.charAt(0);
                         let crank:string = calg.charAt(1);
                         if (cfile === file1) {

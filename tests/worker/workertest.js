@@ -61,14 +61,15 @@ var FlyWorkerTest;
                 var span = window.document.getElementById(response.data.origin.spanid);
                 var answer = response.data.bestMove;
                 if (answer === response.data.origin.correct) {
-                    span.innerText = 'OK: found ' + answer;
+                    span.innerText = 'OK: [' + response.data.bestPath + ']';
                     span.className = 'PassedTest';
                 }
                 else {
-                    span.innerText = 'FAILURE: expected ' + response.data.origin.correct + ' but found ' + answer;
+                    span.innerText = 'FAILURE: expected ' + response.data.origin.correct + ' but found [' + response.data.bestPath + ']';
                 }
             };
-            worker.postMessage({ verb: 'MateSearch', limit: 1, game: 'e2e4 f7f6 d2d4 g7g5', correct: 'd1h5', spanid: 'MateText001' });
+            worker.postMessage({ verb: 'MateSearch', limit: 1, game: 'e4 f6 d4 g5', correct: 'd1h5', spanid: 'MateText001' });
+            worker.postMessage({ verb: 'MateSearch', limit: 1, game: 'e4 e5 Bc4 Nc6 Qf3 a5', correct: 'f3f7', spanid: 'MateText002' });
         };
         return Test;
     })();
