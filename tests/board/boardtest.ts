@@ -16,7 +16,6 @@ module FlyBoardTest {
             if (!Test.TestInitLegalMoves(board)) return;
             if (!Test.Castling(board)) return;
             if (!Test.GameTests(board)) return;
-            if (!Test.WorkerTest()) return;
 
             summary.innerText = 'All tests passed.';
             summary.className = 'TestSummary PassedTest';
@@ -296,20 +295,6 @@ module FlyBoardTest {
             span.innerText = 'OK: checked ' + Test.StepCount.toFixed() + ' turns.';
             span.className = 'PassedTest';
             return true;
-        }
-
-        private static WorkerTest(): boolean {
-            let span = window.document.getElementById('WorkerText');
-            span.innerText = 'Sending message...';
-            var worker = new Worker('../../src/flywheel.js');
-            worker.onmessage = function(message) {
-                if (message.data === 'pong') {
-                    span.innerText = 'OK';
-                    span.className = 'PassedTest';
-                }
-            };
-            worker.postMessage({verb:'ping'});
-            return true;    // We don't actually know the test succeeded (async)
         }
     }
 }

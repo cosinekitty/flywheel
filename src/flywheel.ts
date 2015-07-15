@@ -1403,15 +1403,3 @@ module Flywheel {
         }
     }
 }
-
-
-//-----------------------------------------------------------------------------
-// Worker support
-
-onmessage = function (message: MessageEvent) {
-    switch (message.data.verb) {
-        case 'ping':
-            postMessage('pong', null);
-            break;
-    }
-}

@@ -1350,13 +1350,4 @@ var Flywheel;
     })();
     Flywheel.Board = Board;
 })(Flywheel || (Flywheel = {}));
-//-----------------------------------------------------------------------------
-// Worker support
-onmessage = function (message) {
-    switch (message.data.verb) {
-        case 'ping':
-            postMessage('pong', null);
-            break;
-    }
-};
 //# sourceMappingURL=flywheel.js.map

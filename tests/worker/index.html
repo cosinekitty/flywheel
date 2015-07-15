@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Flywheel unit test #2: worker</title>
+    <link rel="stylesheet" type="text/css" href="../shared/flytest.css">
+</head>
+<body onload="FlyWorkerTest.Test.Run()">
+    <table>
+        <tr class="TestHeader">
+            <td>Test</td>
+            <td>Result</td>
+        </tr>
+        <tr class="TestRow">
+            <td>Worker ping</td>
+            <td><span id="PingText" class="PendingTest">(pending)</span></td>
+        </tr>
+    </table>
+
+    <div class="TestSummary" id="TestSummaryText" class="PendingTest"></div>
+
+    <script src="../../src/flyworker.js"></script>
+    <script src="workertest.js"></script>
+</body>
+</html>

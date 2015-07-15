@@ -5,7 +5,7 @@
     },
 
     "files": [
-        "flywheel.ts",
-        "flyworker.ts"
+        "../../src/flyworker.ts",
+        "workertest.ts"
     ]
 }
