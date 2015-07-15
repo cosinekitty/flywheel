@@ -2,6 +2,27 @@
 
 Flywheel is a pure Javascript chess engine (still in development).
 
+## Design goals
+
+* Computer plays chess with adjustable skill level.
+  * AI will run in Javascript background worker.
+  * Will be strong enough to be a challenge for most people, but possible to decrease strength so weaker players can beat it.
+* Also enables creating chess-related HTML5 apps that don't play chess, but just need to know about chess rules.
+* No built-in user interface - can be adapted to any UI you want.
+* No dependencies on other Javascript libraries (pure Javascript/HTML5).
+* Fully understand all rules of chess.
+  * Generate a list of all legal moves for any chess position.
+  * Verify whether an externally-supplied move is legal or not.
+  * Make and unmake moves on the board.
+  * Determine whether the game has ended by
+    * Checkmate
+    * Stalemate
+    * Draw by threefold repetition
+    * Draw by 50-move rule
+    * Draw by insufficient material
+* [Forsyth–Edwards Notation](https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation) (FEN): parse FEN into a chess position, and for any chess position, generate FEN.
+* [Portable Game Notation](https://en.wikipedia.org/wiki/Portable_Game_Notation) (PGN): parse PGN from a game to reconstruct the game state, and generate PGN from a board position.
+
 ## Running unit tests
 
 The unit tests exercise the Flywheel engine.  Some of the tests require Javascript Workers, which means most browsers,  for security reasons, will refuse to run them directly from the local filesystem.  Other tests will run fine from the local filesystem.  The easiest way to run all the tests consistently is to run a local http server.  I use Python 2.7 to serve content directly from the cloned repository, though there are many other ways.
