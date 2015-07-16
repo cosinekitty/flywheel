@@ -32,8 +32,8 @@ var FlyWorker;
     var Worker = (function () {
         function Worker() {
         }
-        Worker.MateSearch = function (game, limit) {
-            var board = new Flywheel.Board();
+        Worker.MateSearch = function (fen, game, limit) {
+            var board = new Flywheel.Board(fen);
             board.PushHistory(game);
             var bestPath = Flywheel.Thinker.MateSearch(board, limit);
             return bestPath;
@@ -50,7 +50,7 @@ if (typeof importScripts === 'function') {
                 postMessage({ origin: message.data, status: 'pong', tag: message.data.tag }, null);
                 break;
             case 'MateSearch':
-                var bestPath = FlyWorker.Worker.MateSearch(message.data.game, message.data.limit);
+                var bestPath = FlyWorker.Worker.MateSearch(message.data.fen, message.data.game, message.data.limit);
                 var algpath = '';
                 var algmove = '';
                 if (bestPath.move.length > 0) {

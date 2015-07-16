@@ -350,13 +350,17 @@ module Flywheel {
         private epTarget: number;       // board offset behind a pawn just pushed 2 squares, otherwise 0
         private initialFen: string;     // if defined, the FEN for the starting position
 
-        public constructor() {
+        public constructor(fen:string = null) {
             this.Init();
-            this.Reset();
+            if (fen) {
+                this.SetForsythEdwardsNotation(fen);
+            } else {
+                this.Reset();
+            }
         }
 
         public Clone():Board {
-            let copy:Board = new Board();
+            let copy:Board = new Board(this.initialFen);
             for (let info of this.moveStack) {
                 copy.PushMove(info.move);
             }
@@ -564,7 +568,7 @@ module Flywheel {
             // Any exception that occurred in the middle of this procedure could corrupt
             // the board state.  Therefore, instead of modifying this Board object,
             // we create a temporary board object to make all the moves in.
-            let tempBoard:Board = new Board();  // FIXFIXFIX - add initial FEN support?  (related to Issue #4)
+            let tempBoard:Board = new Board(this.initialFen);
             let history:string = '';
             for (let info of this.moveStack) {
                 if (history.length > 0) {
@@ -646,9 +650,11 @@ module Flywheel {
         }
 
         public PushHistory(history:string):void {
-            let notationArray:string[] = history.split(' ');
-            for (let notation of notationArray) {
-                this.PushNotation(notation);
+            if (history) {
+                let notationArray:string[] = history.split(' ');
+                for (let notation of notationArray) {
+                    this.PushNotation(notation);
+                }
             }
         }
 
@@ -1614,7 +1620,8 @@ module Flywheel {
             if (depth >= limit) {
                 // Recursion cutoff: quickly determine game result and return corresponding score.
                 if (board.IsCurrentPlayerInCheck() && !board.CurrentPlayerCanMove()) {
-                    return Score.CheckmateLoss;
+                    // See notes below about postponement adjustment.
+                    return Score.CheckmateLoss + depth;
                 }
                 return Score.Draw;
             }
@@ -1622,6 +1629,7 @@ module Flywheel {
             let legal:Move[] = board.LegalMoves();
             if (legal.length === 0) {
                 // Either checkmate or stalemate, depending on whether the current player is in check.
+                // Postponement adjustment:
                 // Losing by checkmate is "better" the further it happens in the future.
                 // This motivates avoiding being checkmated as long as possible,
                 // and it also motivates checkmating the opponent as soon as possible.

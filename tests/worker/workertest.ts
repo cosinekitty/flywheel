@@ -71,6 +71,13 @@ module FlyWorkerTest {
             }
             worker.postMessage({verb:'MateSearch', limit:1, game:'e4 f6 d4 g5', correct:'d1h5', spanid:'MateText001'});
             worker.postMessage({verb:'MateSearch', limit:1, game:'e4 e5 Bc4 Nc6 Qf3 a5', correct:'f3f7', spanid:'MateText002'});
+
+            worker.postMessage({
+                verb:'MateSearch',
+                limit:3,
+                fen:'3qr2k/pbpp2pp/1p5N/3Q2b1/2P1P3/P7/1PP2PPP/R4RK1 w - - 0 1',
+                correct:'d5g8',
+                spanid:'MateText003'});
         }
     }
 }

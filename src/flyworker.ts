@@ -31,8 +31,8 @@
 
 module FlyWorker {
     export class Worker {
-        public static MateSearch(game:string, limit:number):any {
-            let board:Flywheel.Board = new Flywheel.Board();
+        public static MateSearch(fen:string, game:string, limit:number):any {
+            let board:Flywheel.Board = new Flywheel.Board(fen);
             board.PushHistory(game);
             let bestPath:Flywheel.BestPath = Flywheel.Thinker.MateSearch(board, limit);
             return bestPath;
@@ -49,8 +49,12 @@ if (typeof importScripts === 'function') {
                 postMessage({origin:message.data, status:'pong', tag:message.data.tag}, null);
                 break;
 
-            case 'MateSearch':  // {verb:'MateSearch', game:'e2e4 e5e7 ...', limit:5}
-                let bestPath:Flywheel.BestPath = FlyWorker.Worker.MateSearch(message.data.game, message.data.limit);
+            case 'MateSearch':  // {verb:'MateSearch', game:'e2e4 e5e7 ...', limit:5, fen:...}
+                let bestPath:Flywheel.BestPath = FlyWorker.Worker.MateSearch(
+                    message.data.fen,
+                    message.data.game,
+                    message.data.limit);
+
                 let algpath = '';
                 let algmove = '';
                 if (bestPath.move.length > 0) {

@@ -262,9 +262,15 @@ var Flywheel;
     })();
     Flywheel.GameResult = GameResult;
     var Board = (function () {
-        function Board() {
+        function Board(fen) {
+            if (fen === void 0) { fen = null; }
             this.Init();
-            this.Reset();
+            if (fen) {
+                this.SetForsythEdwardsNotation(fen);
+            }
+            else {
+                this.Reset();
+            }
         }
         Board.StaticInit = function () {
             Board.OffsetTable = {};
@@ -308,7 +314,7 @@ var Flywheel;
             return alg;
         };
         Board.prototype.Clone = function () {
-            var copy = new Board();
+            var copy = new Board(this.initialFen);
             for (var _i = 0, _a = this.moveStack; _i < _a.length; _i++) {
                 var info = _a[_i];
                 copy.PushMove(info.move);
@@ -546,7 +552,7 @@ var Flywheel;
             // Any exception that occurred in the middle of this procedure could corrupt
             // the board state.  Therefore, instead of modifying this Board object,
             // we create a temporary board object to make all the moves in.
-            var tempBoard = new Board(); // FIXFIXFIX - add initial FEN support?  (related to Issue #4)
+            var tempBoard = new Board(this.initialFen);
             var history = '';
             for (var _i = 0, _a = this.moveStack; _i < _a.length; _i++) {
                 var info = _a[_i];
@@ -624,10 +630,12 @@ var Flywheel;
             throw 'Move notation is not valid/legal: "' + notation + '"';
         };
         Board.prototype.PushHistory = function (history) {
-            var notationArray = history.split(' ');
-            for (var _i = 0; _i < notationArray.length; _i++) {
-                var notation = notationArray[_i];
-                this.PushNotation(notation);
+            if (history) {
+                var notationArray = history.split(' ');
+                for (var _i = 0; _i < notationArray.length; _i++) {
+                    var notation = notationArray[_i];
+                    this.PushNotation(notation);
+                }
             }
         };
         Board.prototype.PushMove = function (move) {
@@ -1570,13 +1578,15 @@ var Flywheel;
             if (depth >= limit) {
                 // Recursion cutoff: quickly determine game result and return corresponding score.
                 if (board.IsCurrentPlayerInCheck() && !board.CurrentPlayerCanMove()) {
-                    return Score.CheckmateLoss;
+                    // See notes below about postponement adjustment.
+                    return Score.CheckmateLoss + depth;
                 }
                 return Score.Draw;
             }
             var legal = board.LegalMoves();
             if (legal.length === 0) {
                 // Either checkmate or stalemate, depending on whether the current player is in check.
+                // Postponement adjustment:
                 // Losing by checkmate is "better" the further it happens in the future.
                 // This motivates avoiding being checkmated as long as possible,
                 // and it also motivates checkmating the opponent as soon as possible.
