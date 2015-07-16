@@ -454,6 +454,10 @@ module Flywheel {
             return this.currentPlayerInCheck;
         }
 
+        public IsCurrentPlayerCheckmated():boolean {
+            return this.IsCurrentPlayerInCheck() && !this.CurrentPlayerCanMove();
+        }
+
         private IsPlayerInCheck(side:Side): boolean {
             if (side === Side.White) {
                 return this.IsAttackedByBlack(this.whiteKingOfs);
@@ -1601,20 +1605,29 @@ module Flywheel {
     }
 
     export class Thinker {
-        public static MateSearch(board:Board, limit:number): BestPath {
+        public static MateSearch(board:Board, maxLimit:number): BestPath {
             // Search for a forced checkmate with the specified search limit.
             // First we must determine if the game is over, either because there
             // are no legal moves, or because of the various types of non-stalemate draws.
             let bestPath:BestPath = new BestPath();
 
-            // FIXFIXFIX: change to incremental deepening.
-            // FIXFIXFIX: omit moves that lead to forced loss from further consideration.
-            bestPath.score = Thinker.InternalMateSearch(board, limit, 0, bestPath, Score.NegInf, Score.PosInf);
+            for (let limit=1; limit <= maxLimit; ++limit) {
+                // FIXFIXFIX: omit moves that lead to forced loss from further consideration.
+                bestPath.score = Thinker.InternalMateSearch(board, limit, 0, bestPath, Score.NegInf, Score.PosInf);
+                if (bestPath.score >= Score.ForcedWin) {
+                    break;
+                }
+            }
 
             return bestPath;
         }
 
-        private static InternalMateSearch(board:Board, limit:number, depth:number, bestPath:BestPath, alpha:Score, beta:Score): Score {
+        private static InternalMateSearch(board:Board,
+                                          limit:number,
+                                          depth:number,
+                                          bestPath:BestPath,
+                                          alpha:Score,
+                                          beta:Score): Score {
             bestPath.Truncate();
 
             if (depth >= limit) {

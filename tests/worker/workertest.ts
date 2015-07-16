@@ -63,18 +63,38 @@ module FlyWorkerTest {
                 let span = window.document.getElementById(response.data.origin.spanid);
                 let answer = response.data.bestMove;
                 if (answer === response.data.origin.correct) {
-                    span.innerText = 'OK: [' + response.data.bestPath + ']';
-                    span.className = 'PassedTest';
+                    // Create a chess board and validate the path we got back leads to a checkmate.
+                    let board = new Flywheel.Board(response.data.origin.fen);
+                    board.PushHistory(response.data.origin.game);
+                    board.PushHistory(response.data.bestPath);
+                    if (!board.IsCurrentPlayerCheckmated()) {
+                        span.innerText = 'FAILURE: path does not checkmate: [' + response.data.bestPath + ']';
+                    } else {
+                        span.innerText = 'OK: [' + response.data.bestPath + ']';
+                        span.className = 'PassedTest';
+                    }
                 } else {
                     span.innerText = 'FAILURE: expected ' + response.data.origin.correct + ' but found [' + response.data.bestPath + ']';
                 }
             }
-            worker.postMessage({verb:'MateSearch', limit:1, game:'e4 f6 d4 g5', correct:'d1h5', spanid:'MateText001'});
-            worker.postMessage({verb:'MateSearch', limit:1, game:'e4 e5 Bc4 Nc6 Qf3 a5', correct:'f3f7', spanid:'MateText002'});
 
             worker.postMessage({
                 verb:'MateSearch',
-                limit:3,
+                limit:10,
+                game:'e4 f6 d4 g5',
+                correct:'d1h5',
+                spanid:'MateText001'});
+
+            worker.postMessage({
+                verb:'MateSearch',
+                limit:10,
+                game:'e4 e5 Bc4 Nc6 Qf3 a5',
+                correct:'f3f7',
+                spanid:'MateText002'});
+
+            worker.postMessage({
+                verb:'MateSearch',
+                limit:10,
                 fen:'3qr2k/pbpp2pp/1p5N/3Q2b1/2P1P3/P7/1PP2PPP/R4RK1 w - - 0 1',
                 correct:'d5g8',
                 spanid:'MateText003'
@@ -82,7 +102,7 @@ module FlyWorkerTest {
 
             worker.postMessage({
                 verb:'MateSearch',
-                limit:3,
+                limit:10,
                 fen:'8/8/P5P1/q6p/kb1p3P/5P2/1KP2Q2/3B4 w - - 0 1',
                 correct:'c2c4',
                 spanid:'MateText004'
@@ -90,7 +110,7 @@ module FlyWorkerTest {
 
             worker.postMessage({
                 verb:'MateSearch',
-                limit:5,
+                limit:10,
                 fen:'r5rk/5p1p/5R2/4B3/8/8/7P/7K w - - 0 1',
                 correct:'f6a6',
                 spanid:'MateText005'
@@ -98,7 +118,7 @@ module FlyWorkerTest {
 
             worker.postMessage({
                 verb:'MateSearch',
-                limit:5,
+                limit:10,
                 fen:'r2qkbQ1/pb1n2p1/2p2r2/5N1p/P2P3N/4P3/1P3PPP/2R2RK1 w q - 0 1',
                 correct:'f5g7',
                 spanid:'MateText006'

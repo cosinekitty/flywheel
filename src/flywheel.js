@@ -399,6 +399,9 @@ var Flywheel;
             }
             return this.currentPlayerInCheck;
         };
+        Board.prototype.IsCurrentPlayerCheckmated = function () {
+            return this.IsCurrentPlayerInCheck() && !this.CurrentPlayerCanMove();
+        };
         Board.prototype.IsPlayerInCheck = function (side) {
             if (side === Side.White) {
                 return this.IsAttackedByBlack(this.whiteKingOfs);
@@ -1563,14 +1566,18 @@ var Flywheel;
     var Thinker = (function () {
         function Thinker() {
         }
-        Thinker.MateSearch = function (board, limit) {
+        Thinker.MateSearch = function (board, maxLimit) {
             // Search for a forced checkmate with the specified search limit.
             // First we must determine if the game is over, either because there
             // are no legal moves, or because of the various types of non-stalemate draws.
             var bestPath = new BestPath();
-            // FIXFIXFIX: change to incremental deepening.
-            // FIXFIXFIX: omit moves that lead to forced loss from further consideration.
-            bestPath.score = Thinker.InternalMateSearch(board, limit, 0, bestPath, Score.NegInf, Score.PosInf);
+            for (var limit = 1; limit <= maxLimit; ++limit) {
+                // FIXFIXFIX: omit moves that lead to forced loss from further consideration.
+                bestPath.score = Thinker.InternalMateSearch(board, limit, 0, bestPath, Score.NegInf, Score.PosInf);
+                if (bestPath.score >= Score.ForcedWin) {
+                    break;
+                }
+            }
             return bestPath;
         };
         Thinker.InternalMateSearch = function (board, limit, depth, bestPath, alpha, beta) {
