@@ -46,7 +46,7 @@ if (typeof importScripts === 'function') {
     onmessage = function (message:MessageEvent) {
         switch (message.data.verb) {
             case 'ping':
-                postMessage({origin:message.data, status:'pong', tag:message.data.tag}, null);
+                postMessage({origin: message.data, status: 'pong', tag: message.data.tag}, null);
                 break;
 
             case 'MateSearch':  // {verb:'MateSearch', game:'e2e4 e5e7 ...', limit:5, fen:...}
@@ -66,7 +66,7 @@ if (typeof importScripts === 'function') {
                         algpath += move.toString();
                     }
                 }
-                postMessage({origin:message.data, bestPath:algpath, bestMove:algmove, score:bestPath.score}, null);
+                postMessage({origin: message.data, bestPath: algpath, bestMove: algmove, score: bestPath.score}, null);
                 break;
         }
     }

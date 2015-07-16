@@ -383,7 +383,7 @@ module Flywheel {
             return this.moveStack.length > 0;
         }
 
-        public LegalMoves(): Move[] {
+        public LegalMoves(): Move[] {           // FIXFIXFIX: allow passing in a scoring function to assist move ordering
             let rawlist:Move[] = this.RawMoves();
             let movelist:Move[] = [];
             for (let raw of rawlist) {

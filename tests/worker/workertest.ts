@@ -83,14 +83,16 @@ module FlyWorkerTest {
                 limit:10,
                 game:'e4 f6 d4 g5',
                 correct:'d1h5',
-                spanid:'MateText001'});
+                spanid:'MateText001'
+            });
 
             worker.postMessage({
                 verb:'MateSearch',
                 limit:10,
                 game:'e4 e5 Bc4 Nc6 Qf3 a5',
                 correct:'f3f7',
-                spanid:'MateText002'});
+                spanid:'MateText002'
+            });
 
             worker.postMessage({
                 verb:'MateSearch',
@@ -123,6 +125,24 @@ module FlyWorkerTest {
                 correct:'f5g7',
                 spanid:'MateText006'
             });
+
+            worker.postMessage({
+                verb:'MateSearch',
+                limit:10,
+                fen:'3r1r2/1pp2p1k/p5pp/4P3/2nP3R/2P3QP/P1B1q1P1/5RK1 w - - 0 1',
+                correct:'f1f7',
+                spanid:'MateText007'
+            });
+
+            /*
+            worker.postMessage({
+                verb:'MateSearch',
+                limit:10,
+                fen:'6r1/p3p1rk/1p1pPp1p/q3n2R/4P3/3BR2P/PPP2QP1/7K w - - 0 1',
+                correct:'f1f7',
+                spanid:'MateText008'
+            });
+            */
         }
     }
 }
