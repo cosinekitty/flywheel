@@ -78,6 +78,13 @@ module FlyWorkerTest {
                 fen:'3qr2k/pbpp2pp/1p5N/3Q2b1/2P1P3/P7/1PP2PPP/R4RK1 w - - 0 1',
                 correct:'d5g8',
                 spanid:'MateText003'});
+
+            worker.postMessage({
+                verb:'MateSearch',
+                limit:3,
+                fen:'8/8/P5P1/q6p/kb1p3P/5P2/1KP2Q2/3B4 w - - 0 1',
+                correct:'c2c4',
+                spanid:'MateText004'});
         }
     }
 }
