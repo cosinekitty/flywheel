@@ -75,13 +75,29 @@ var FlyWorkerTest;
                 limit: 3,
                 fen: '3qr2k/pbpp2pp/1p5N/3Q2b1/2P1P3/P7/1PP2PPP/R4RK1 w - - 0 1',
                 correct: 'd5g8',
-                spanid: 'MateText003' });
+                spanid: 'MateText003'
+            });
             worker.postMessage({
                 verb: 'MateSearch',
                 limit: 3,
                 fen: '8/8/P5P1/q6p/kb1p3P/5P2/1KP2Q2/3B4 w - - 0 1',
                 correct: 'c2c4',
-                spanid: 'MateText004' });
+                spanid: 'MateText004'
+            });
+            worker.postMessage({
+                verb: 'MateSearch',
+                limit: 5,
+                fen: 'r5rk/5p1p/5R2/4B3/8/8/7P/7K w - - 0 1',
+                correct: 'f6a6',
+                spanid: 'MateText005'
+            });
+            worker.postMessage({
+                verb: 'MateSearch',
+                limit: 5,
+                fen: 'r2qkbQ1/pb1n2p1/2p2r2/5N1p/P2P3N/4P3/1P3PPP/2R2RK1 w q - 0 1',
+                correct: 'f5g7',
+                spanid: 'MateText006'
+            });
         };
         return Test;
     })();
