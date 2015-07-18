@@ -45,7 +45,6 @@ var FlyWorkerTest;
             var worker = Test.MakeWorker();
             worker.onmessage = function (response) {
                 if (response.data.status === 'pong') {
-                    console.log('Ping received ' + response.data.tag);
                     span.innerText = 'OK: ' + response.data.tag;
                     span.className = 'PassedTest';
                 }
@@ -57,7 +56,6 @@ var FlyWorkerTest;
         Test.MateSearches = function () {
             var worker = Test.MakeWorker();
             worker.onmessage = function (response) {
-                console.log(response.data);
                 var span = window.document.getElementById(response.data.origin.spanid);
                 var answer = response.data.bestMove;
                 if (answer === response.data.origin.correct) {
@@ -126,15 +124,13 @@ var FlyWorkerTest;
                 correct: 'f1f7',
                 spanid: 'MateText007'
             });
-            /*
             worker.postMessage({
-                verb:'MateSearch',
-                limit:10,
-                fen:'6r1/p3p1rk/1p1pPp1p/q3n2R/4P3/3BR2P/PPP2QP1/7K w - - 0 1',
-                correct:'f1f7',
-                spanid:'MateText008'
+                verb: 'MateSearch',
+                limit: 10,
+                fen: '6r1/p3p1rk/1p1pPp1p/q3n2R/4P3/3BR2P/PPP2QP1/7K w - - 0 1',
+                correct: 'h5h6',
+                spanid: 'MateText008'
             });
-            */
         };
         return Test;
     })();

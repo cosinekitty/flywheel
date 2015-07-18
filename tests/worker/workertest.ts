@@ -46,7 +46,6 @@ module FlyWorkerTest {
             let worker = Test.MakeWorker();
             worker.onmessage = function(response) {
                 if (response.data.status === 'pong') {
-                    console.log('Ping received ' + response.data.tag);
                     span.innerText = 'OK: ' + response.data.tag;
                     span.className = 'PassedTest';
                 }
@@ -59,7 +58,6 @@ module FlyWorkerTest {
         private static MateSearches():void {
             let worker = Test.MakeWorker();
             worker.onmessage = function(response) {
-                console.log(response.data);
                 let span = window.document.getElementById(response.data.origin.spanid);
                 let answer = response.data.bestMove;
                 if (answer === response.data.origin.correct) {
@@ -134,15 +132,13 @@ module FlyWorkerTest {
                 spanid:'MateText007'
             });
 
-            /*
             worker.postMessage({
                 verb:'MateSearch',
                 limit:10,
                 fen:'6r1/p3p1rk/1p1pPp1p/q3n2R/4P3/3BR2P/PPP2QP1/7K w - - 0 1',
-                correct:'f1f7',
+                correct:'h5h6',
                 spanid:'MateText008'
             });
-            */
         }
     }
 }
