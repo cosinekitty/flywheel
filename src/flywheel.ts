@@ -1255,10 +1255,17 @@ module Flywheel {
             // Search the board's contents for the kings.
             // Verify that exactly one White King and exactly one Black King are present
             // and store their locations.
+            // Validate other constraints of valid chess positions: pawns only on ranks 2..7,
+            // each side has total pawns = 0..8, pawns + queens = 0..9, etc.
+
             this.whiteKingOfs = undefined;
             this.blackKingOfs = undefined;
 
             for (let ofs of Board.ValidOffsetList) {
+                if (Utility.Neutral[this.square[ofs]] === undefined) {
+                    throw 'Invalid board contents at ' + Board.AlgTable[ofs];
+                }
+
                 switch (this.square[ofs]) {
                     case Square.WhiteKing:
                         if (this.whiteKingOfs === undefined) {
@@ -1273,6 +1280,13 @@ module Flywheel {
                             this.blackKingOfs = ofs;
                         } else {
                             throw 'Found more than one Black King on the board.';
+                        }
+                        break;
+
+                    case Square.WhitePawn:
+                    case Square.BlackPawn:
+                        if (Board.RankNumber[ofs] === 1 || Board.RankNumber[ofs] === 8) {
+                            throw 'Pawns are not allowed on ranks 1 or 8.';
                         }
                         break;
                 }
