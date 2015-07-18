@@ -254,7 +254,6 @@ var Flywheel;
     var DrawType = Flywheel.DrawType;
     var GameResult = (function () {
         function GameResult(status, drawType) {
-            if (drawType === void 0) { drawType = null; }
             this.status = status;
             this.drawType = drawType;
         }
@@ -277,6 +276,7 @@ var Flywheel;
             Board.AlgTable = {};
             Board.ValidOffsetList = [];
             Board.RankNumber = {};
+            Board.SquareIsLight = {};
             for (var y = 0; y < 8; ++y) {
                 var rank = '12345678'.charAt(y);
                 for (var x = 0; x < 8; x++) {
@@ -286,6 +286,7 @@ var Flywheel;
                     Board.AlgTable[ofs] = alg;
                     Board.ValidOffsetList.push(ofs);
                     Board.RankNumber[ofs] = 1 + y;
+                    Board.SquareIsLight[ofs] = ((x + y) & 1) !== 0;
                 }
             }
             return true;
@@ -361,9 +362,13 @@ var Flywheel;
             return movelist;
         };
         Board.prototype.GetNonStalemateDrawType = function () {
-            // FIXFIXFIX - detect draws by threefold repetition
-            // FIXFIXFIX - detect draws by insufficient material
-            // FIXFIXFIX - detect draws by 50-move rule
+            // FIXFIXFIX - detect draws by threefold repetition.
+            if (this.numQuietPlies >= 100) {
+                return DrawType.FiftyMoveRule;
+            }
+            if (this.IsMaterialDraw()) {
+                return DrawType.InsufficientMaterial;
+            }
             return null; // non-stalemate draw not detected
         };
         Board.prototype.GetGameResult = function () {
@@ -408,6 +413,91 @@ var Flywheel;
         };
         Board.prototype.IsCurrentPlayerCheckmated = function () {
             return this.IsCurrentPlayerInCheck() && !this.CurrentPlayerCanMove();
+        };
+        Board.prototype.IsMaterialDraw = function () {
+            // This function must return false for any position where a checkmate
+            // is even remotely possible in the future, even if it is not forcible.
+            // It should return true only when we are SURE that checkmate is IMPOSSIBLE.
+            var whiteKnights = 0;
+            var blackKnights = 0;
+            var whiteBishopsOnDark = 0;
+            var whiteBishopsOnLight = 0;
+            var blackBishopsOnDark = 0;
+            var blackBishopsOnLight = 0;
+            for (var _i = 0, _a = Board.ValidOffsetList; _i < _a.length; _i++) {
+                var ofs = _a[_i];
+                switch (this.square[ofs]) {
+                    case Square.WhiteQueen:
+                    case Square.BlackQueen:
+                    case Square.WhiteRook:
+                    case Square.BlackRook:
+                    case Square.WhitePawn:
+                    case Square.BlackPawn:
+                        return false;
+                    case Square.WhiteKnight:
+                        ++whiteKnights;
+                        break;
+                    case Square.BlackKnight:
+                        ++blackKnights;
+                        break;
+                    case Square.WhiteBishop:
+                        if (Board.SquareIsLight[ofs]) {
+                            ++whiteBishopsOnLight;
+                        }
+                        else {
+                            ++whiteBishopsOnDark;
+                        }
+                        break;
+                    case Square.BlackBishop:
+                        if (Board.SquareIsLight[ofs]) {
+                            ++blackBishopsOnLight;
+                        }
+                        else {
+                            ++blackBishopsOnDark;
+                        }
+                        break;
+                }
+            }
+            // Getting here means there are only 2 kings (of course),
+            // 0 or more bishops, and 0 or more knights on the board.
+            // Consider this case:   8/5B2/8/8/8/7K/8/6bk w - - 0 1
+            // Here White wins immediately with Bd5#.
+            // So even though it is K+B vs K+B, we would return false (not a DEFINITE draw).
+            // For now, to be safe, we return true (definite draw) only
+            // when both sides have lone kings,
+            // or one side has a lone king and the other has
+            // either a king + knight or a king + bishop(s) all on the same color.
+            var whiteMinor = whiteKnights + whiteBishopsOnLight + whiteBishopsOnDark;
+            var blackMinor = blackKnights + blackBishopsOnLight + blackBishopsOnDark;
+            if (whiteMinor === 0) {
+                // White has a lone King.
+                if (blackBishopsOnLight === 0 || blackBishopsOnDark === 0) {
+                    // Black either has no Bishops, or all Bishops on the same color.
+                    if (blackKnights === 0) {
+                        return true; // Black has nothing but bishops all on the same color.
+                    }
+                    if (blackKnights === 1) {
+                        if (blackBishopsOnLight + blackBishopsOnDark === 0) {
+                            return true; // Black has only a single knight.
+                        }
+                    }
+                }
+            }
+            else if (blackMinor === 0) {
+                // Black has a lone King.
+                if (whiteBishopsOnLight === 0 || whiteBishopsOnDark === 0) {
+                    // White either has no Bishops, or all Bishops on the same color.
+                    if (whiteKnights === 0) {
+                        return true; // White has nothing but bishops all on the same color.
+                    }
+                    if (whiteKnights === 1) {
+                        if (whiteBishopsOnLight + whiteBishopsOnDark === 0) {
+                            return true; // White has only a single knight.
+                        }
+                    }
+                }
+            }
+            return false; // assume checkmate is still theoretically possible, even if it cannot not forced
         };
         Board.prototype.IsPlayerInCheck = function (side) {
             if (side === Side.White) {

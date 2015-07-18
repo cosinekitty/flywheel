@@ -132,6 +132,7 @@ module FlyWorkerTest {
                 spanid:'MateText007'
             });
 
+/*
             worker.postMessage({
                 verb:'MateSearch',
                 limit:10,
@@ -139,6 +140,7 @@ module FlyWorkerTest {
                 correct:'h5h6',
                 spanid:'MateText008'
             });
+*/
         }
     }
 }
