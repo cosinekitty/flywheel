@@ -1191,12 +1191,18 @@ var Flywheel;
             // each side has total pawns = 0..8, pawns + queens = 0..9, etc.
             this.whiteKingOfs = undefined;
             this.blackKingOfs = undefined;
+            var inventory = [
+                0,
+                0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0]; // Black P N B R Q K
             for (var _i = 0, _a = Board.ValidOffsetList; _i < _a.length; _i++) {
                 var ofs = _a[_i];
-                if (Utility.Neutral[this.square[ofs]] === undefined) {
+                var s = this.square[ofs];
+                if (Utility.Neutral[s] === undefined) {
                     throw 'Invalid board contents at ' + Board.AlgTable[ofs];
                 }
-                switch (this.square[ofs]) {
+                ++inventory[s];
+                switch (s) {
                     case Square.WhiteKing:
                         if (this.whiteKingOfs === undefined) {
                             this.whiteKingOfs = ofs;
@@ -1227,8 +1233,41 @@ var Flywheel;
             if (this.blackKingOfs === undefined) {
                 throw 'There is no Black King on the board.';
             }
+            Board.ValidateInventory(inventory, Side.White);
+            Board.ValidateInventory(inventory, Side.Black);
             if (this.IsPlayerInCheck(this.enemy)) {
                 throw 'Illegal position: side not having the turn is in check.';
+            }
+        };
+        Board.ValidateInventory = function (inventory, side) {
+            // Check non-king piece counts for being attainable in a real game of chess.
+            // Kings are validated separately.
+            var P = inventory[Utility.SidePieces[side][NeutralPiece.Pawn]];
+            var N = inventory[Utility.SidePieces[side][NeutralPiece.Knight]];
+            var B = inventory[Utility.SidePieces[side][NeutralPiece.Bishop]];
+            var R = inventory[Utility.SidePieces[side][NeutralPiece.Rook]];
+            var Q = inventory[Utility.SidePieces[side][NeutralPiece.Queen]];
+            var stext = (side === Side.White) ? 'White' : 'Black';
+            if (P > 8) {
+                throw 'Cannot have more than 8 ' + stext + ' pawns on the board.';
+            }
+            if (N > 10) {
+                throw 'Cannot have more than 10 ' + stext + ' knights on the board.';
+            }
+            if (B > 10) {
+                throw 'Cannot have more than 10 ' + stext + ' bishops on the board.';
+            }
+            if (R > 10) {
+                throw 'Cannot have more than 10 ' + stext + ' rooks on the board.';
+            }
+            if (Q > 9) {
+                throw 'Cannot have more than 9 ' + stext + ' queens on the board.';
+            }
+            // If all 8 pawns are promoted, then there can be a maximum of 15
+            // non-pawns per side.  So total pawns + total non-pawns (ignoring kings)
+            // must never exceed 15.
+            if (P + N + B + R + Q > 15) {
+                throw 'Cannot have more than 16 ' + stext + ' pieces on the board.';
             }
         };
         Board.prototype.GetForsythEdwardsNotation = function () {
