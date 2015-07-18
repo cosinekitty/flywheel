@@ -276,6 +276,10 @@ module Flywheel {
         }
     }
 
+    export interface MoveRater {
+        (board:Board, move:Move): Score;
+    }
+
     export class Board {
         //-----------------------------------------------------------------------------------------------------
         // Class/static stuff
@@ -383,7 +387,7 @@ module Flywheel {
             return this.moveStack.length > 0;
         }
 
-        public LegalMoves(): Move[] {           // FIXFIXFIX: allow passing in a scoring function to assist move ordering
+        public LegalMoves(rater?: MoveRater): Move[] {
             let rawlist:Move[] = this.RawMoves();
             let movelist:Move[] = [];
             for (let raw of rawlist) {
@@ -397,9 +401,16 @@ module Flywheel {
                 // looking to see if the player who just moved is in check.
                 this.PushMove(raw);
                 if (!this.IsPlayerInCheck(this.enemy)) {
+                    if (rater) {
+                        raw.score = rater(this, raw);
+                    }
                     movelist.push(raw);
                 }
                 this.PopMove();
+            }
+            if (rater) {
+                // Sort the moves in descending order of the scores that were assigned by the rater.
+                movelist.sort((a:Move, b:Move) => b.score - a.score);
             }
             return movelist;
         }
@@ -1589,6 +1600,7 @@ module Flywheel {
     export class BestPath {
         public move: Move[] = [];
         public score: Score = Score.NegInf;
+        public nodes: number = 0;
 
         public Clone(): BestPath {
             let copy:BestPath = new BestPath();
@@ -1605,7 +1617,9 @@ module Flywheel {
     }
 
     export class Thinker {
-        public static MateSearch(board:Board, maxLimit:number): BestPath {
+        private nodesVisitedCounter:number = 0;
+
+        public MateSearch(board:Board, maxLimit:number): BestPath {
             // Search for a forced checkmate with the specified search limit.
             // First we must determine if the game is over, either because there
             // are no legal moves, or because of the various types of non-stalemate draws.
@@ -1613,21 +1627,38 @@ module Flywheel {
 
             for (let limit=1; limit <= maxLimit; ++limit) {
                 // FIXFIXFIX: omit moves that lead to forced loss from further consideration.
-                bestPath.score = Thinker.InternalMateSearch(board, limit, 0, bestPath, Score.NegInf, Score.PosInf);
+                bestPath.score = this.InternalMateSearch(board, limit, 0, bestPath, Score.NegInf, Score.PosInf);
                 if (bestPath.score >= Score.ForcedWin) {
                     break;
                 }
             }
 
+            bestPath.nodes = this.nodesVisitedCounter;
             return bestPath;
         }
 
-        private static InternalMateSearch(board:Board,
-                                          limit:number,
-                                          depth:number,
-                                          bestPath:BestPath,
-                                          alpha:Score,
-                                          beta:Score): Score {
+        private static MateSearchMoveRater(board:Board, move:Move):Score {
+            if (board.IsCurrentPlayerInCheck()) {
+                if (!board.CurrentPlayerCanMove()) {
+                    // Put moves that cause checkmate to the very front.
+                    return +2;
+                }
+                // Favor moves that cause check. They are more likely to lead to mate.
+                return +1;
+            }
+            return 0;
+        }
+
+        private InternalMateSearch(
+            board:Board,
+            limit:number,
+            depth:number,
+            bestPath:BestPath,
+            alpha:Score,
+            beta:Score): Score {
+
+            ++this.nodesVisitedCounter;
+
             bestPath.Truncate();
 
             if (depth >= limit) {
@@ -1639,7 +1670,7 @@ module Flywheel {
                 return Score.Draw;
             }
 
-            let legal:Move[] = board.LegalMoves();
+            let legal:Move[] = board.LegalMoves(Thinker.MateSearchMoveRater);
             if (legal.length === 0) {
                 // Either checkmate or stalemate, depending on whether the current player is in check.
                 // Postponement adjustment:
@@ -1664,7 +1695,7 @@ module Flywheel {
                 board.PushMove(move);
                 // Tricky: we negate the return value, flip and negate the alpha-beta window.
                 // This is a "negamax" search -- whatever is good for one player is bad for the other.
-                let score:Score = -Thinker.InternalMateSearch(board, limit, 1+depth, currPath, -beta, -alpha);
+                let score:Score = -this.InternalMateSearch(board, limit, 1+depth, currPath, -beta, -alpha);
                 board.PopMove();
 
                 if (score > bestScore) {

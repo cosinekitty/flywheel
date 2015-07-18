@@ -69,7 +69,7 @@ var FlyWorkerTest;
                         span.innerText = 'FAILURE: path does not checkmate: [' + response.data.bestPath + ']';
                     }
                     else {
-                        span.innerText = 'OK: [' + response.data.bestPath + ']';
+                        span.innerText = 'OK: ' + response.data.nodes + ' [' + response.data.bestPath + ']';
                         span.className = 'PassedTest';
                     }
                 }

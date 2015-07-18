@@ -33,8 +33,9 @@ module FlyWorker {
     export class Worker {
         public static MateSearch(fen:string, game:string, limit:number):any {
             let board:Flywheel.Board = new Flywheel.Board(fen);
+            let thinker:Flywheel.Thinker = new Flywheel.Thinker();
             board.PushHistory(game);
-            let bestPath:Flywheel.BestPath = Flywheel.Thinker.MateSearch(board, limit);
+            let bestPath:Flywheel.BestPath = thinker.MateSearch(board, limit);
             return bestPath;
         }
     }
@@ -66,7 +67,14 @@ if (typeof importScripts === 'function') {
                         algpath += move.toString();
                     }
                 }
-                postMessage({origin: message.data, bestPath: algpath, bestMove: algmove, score: bestPath.score}, null);
+
+                postMessage({
+                    origin: message.data,
+                    bestPath: algpath,
+                    bestMove: algmove,
+                    score: bestPath.score,
+                    nodes: bestPath.nodes}, null);
+
                 break;
         }
     }

@@ -34,8 +34,9 @@ var FlyWorker;
         }
         Worker.MateSearch = function (fen, game, limit) {
             var board = new Flywheel.Board(fen);
+            var thinker = new Flywheel.Thinker();
             board.PushHistory(game);
-            var bestPath = Flywheel.Thinker.MateSearch(board, limit);
+            var bestPath = thinker.MateSearch(board, limit);
             return bestPath;
         };
         return Worker;
@@ -63,7 +64,12 @@ if (typeof importScripts === 'function') {
                         algpath += move.toString();
                     }
                 }
-                postMessage({ origin: message.data, bestPath: algpath, bestMove: algmove, score: bestPath.score }, null);
+                postMessage({
+                    origin: message.data,
+                    bestPath: algpath,
+                    bestMove: algmove,
+                    score: bestPath.score,
+                    nodes: bestPath.nodes }, null);
                 break;
         }
     };

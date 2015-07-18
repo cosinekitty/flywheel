@@ -333,7 +333,7 @@ var Flywheel;
         Board.prototype.CanPopMove = function () {
             return this.moveStack.length > 0;
         };
-        Board.prototype.LegalMoves = function () {
+        Board.prototype.LegalMoves = function (rater) {
             var rawlist = this.RawMoves();
             var movelist = [];
             for (var _i = 0; _i < rawlist.length; _i++) {
@@ -347,9 +347,16 @@ var Flywheel;
                 // looking to see if the player who just moved is in check.
                 this.PushMove(raw);
                 if (!this.IsPlayerInCheck(this.enemy)) {
+                    if (rater) {
+                        raw.score = rater(this, raw);
+                    }
                     movelist.push(raw);
                 }
                 this.PopMove();
+            }
+            if (rater) {
+                // Sort the moves in descending order of the scores that were assigned by the rater.
+                movelist.sort(function (a, b) { return b.score - a.score; });
             }
             return movelist;
         };
@@ -1547,6 +1554,7 @@ var Flywheel;
         function BestPath() {
             this.move = [];
             this.score = Score.NegInf;
+            this.nodes = 0;
         }
         BestPath.prototype.Clone = function () {
             var copy = new BestPath();
@@ -1565,22 +1573,36 @@ var Flywheel;
     Flywheel.BestPath = BestPath;
     var Thinker = (function () {
         function Thinker() {
+            this.nodesVisitedCounter = 0;
         }
-        Thinker.MateSearch = function (board, maxLimit) {
+        Thinker.prototype.MateSearch = function (board, maxLimit) {
             // Search for a forced checkmate with the specified search limit.
             // First we must determine if the game is over, either because there
             // are no legal moves, or because of the various types of non-stalemate draws.
             var bestPath = new BestPath();
             for (var limit = 1; limit <= maxLimit; ++limit) {
                 // FIXFIXFIX: omit moves that lead to forced loss from further consideration.
-                bestPath.score = Thinker.InternalMateSearch(board, limit, 0, bestPath, Score.NegInf, Score.PosInf);
+                bestPath.score = this.InternalMateSearch(board, limit, 0, bestPath, Score.NegInf, Score.PosInf);
                 if (bestPath.score >= Score.ForcedWin) {
                     break;
                 }
             }
+            bestPath.nodes = this.nodesVisitedCounter;
             return bestPath;
         };
-        Thinker.InternalMateSearch = function (board, limit, depth, bestPath, alpha, beta) {
+        Thinker.MateSearchMoveRater = function (board, move) {
+            if (board.IsCurrentPlayerInCheck()) {
+                if (!board.CurrentPlayerCanMove()) {
+                    // Put moves that cause checkmate to the very front.
+                    return +2;
+                }
+                // Favor moves that cause check. They are more likely to lead to mate.
+                return +1;
+            }
+            return 0;
+        };
+        Thinker.prototype.InternalMateSearch = function (board, limit, depth, bestPath, alpha, beta) {
+            ++this.nodesVisitedCounter;
             bestPath.Truncate();
             if (depth >= limit) {
                 // Recursion cutoff: quickly determine game result and return corresponding score.
@@ -1590,7 +1612,7 @@ var Flywheel;
                 }
                 return Score.Draw;
             }
-            var legal = board.LegalMoves();
+            var legal = board.LegalMoves(Thinker.MateSearchMoveRater);
             if (legal.length === 0) {
                 // Either checkmate or stalemate, depending on whether the current player is in check.
                 // Postponement adjustment:
@@ -1613,7 +1635,7 @@ var Flywheel;
                 board.PushMove(move);
                 // Tricky: we negate the return value, flip and negate the alpha-beta window.
                 // This is a "negamax" search -- whatever is good for one player is bad for the other.
-                var score = -Thinker.InternalMateSearch(board, limit, 1 + depth, currPath, -beta, -alpha);
+                var score = -this.InternalMateSearch(board, limit, 1 + depth, currPath, -beta, -alpha);
                 board.PopMove();
                 if (score > bestScore) {
                     bestScore = score;
