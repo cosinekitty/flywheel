@@ -26,6 +26,8 @@ var FlyBoardTest;
                 return;
             if (!Test.GameTests(board))
                 return;
+            if (!Test.DrawByRepTest(board))
+                return;
             summary.innerText = 'All tests passed.';
             summary.className = 'TestSummary PassedTest';
         };
@@ -303,6 +305,35 @@ var FlyBoardTest;
             if (!Test.TestGame(board, span, game004))
                 return false;
             span.innerText = 'OK: checked ' + Test.StepCount.toFixed() + ' turns.';
+            span.className = 'PassedTest';
+            return true;
+        };
+        Test.DrawByRepTest = function (board) {
+            var span = window.document.getElementById('DrawRepText');
+            span.className = 'FailedTest';
+            board.Reset();
+            var rep;
+            if ((rep = board.RepetitionCount()) !== 1) {
+                span.innerText = 'Expected repetition count = 1 but found ' + rep;
+                return false;
+            }
+            board.PushHistory('b1c3 g8f6 c3b1 f6g8');
+            if ((rep = board.RepetitionCount()) !== 2) {
+                span.innerText = 'Expected repetition count = 2 but found ' + rep;
+                return false;
+            }
+            board.PushHistory('b1c3 g8f6 c3b1 f6g8');
+            if ((rep = board.RepetitionCount()) !== 3) {
+                span.innerText = 'Expected repetition count = 3 but found ' + rep;
+                return false;
+            }
+            var result = board.GetGameResult();
+            if (result.status !== Flywheel.GameStatus.Draw ||
+                result.drawType !== Flywheel.DrawType.ThreefoldRepetition) {
+                span.innerText = 'Expected draw by repetition';
+                return false;
+            }
+            span.innerText = 'OK';
             span.className = 'PassedTest';
             return true;
         };
