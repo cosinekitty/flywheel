@@ -179,16 +179,7 @@ var Flywheel;
     })();
     Flywheel.Move = Move;
     var MoveState = (function () {
-        function MoveState(move, capture, wkc, wqc, bkc, bqc, check, numQuietPlies, epTarget) {
-            this.move = move;
-            this.capture = capture;
-            this.whiteCanCastleKingSide = wkc;
-            this.whiteCanCastleQueenSide = wqc;
-            this.blackCanCastleKingSide = bkc;
-            this.blackCanCastleQueenSide = bqc;
-            this.playerWasInCheck = check;
-            this.numQuietPlies = numQuietPlies;
-            this.epTarget = epTarget;
+        function MoveState() {
         }
         return MoveState;
     })();
@@ -756,7 +747,16 @@ var Flywheel;
             this.square[move.dest] = piece;
             this.square[move.source] = Square.Empty;
             // Preserve information needed for PopMove() to undo this move.
-            var info = new MoveState(move.Clone(), capture, this.whiteCanCastleKingSide, this.whiteCanCastleQueenSide, this.blackCanCastleKingSide, this.blackCanCastleQueenSide, this.currentPlayerInCheck, this.numQuietPlies, this.epTarget);
+            var info = new MoveState();
+            info.move = move.Clone(); // clone the move so we protect from any caller side-effects
+            info.capture = capture;
+            info.whiteCanCastleKingSide = this.whiteCanCastleKingSide;
+            info.whiteCanCastleQueenSide = this.whiteCanCastleQueenSide;
+            info.blackCanCastleKingSide = this.blackCanCastleKingSide;
+            info.blackCanCastleQueenSide = this.blackCanCastleQueenSide;
+            info.playerWasInCheck = this.currentPlayerInCheck;
+            info.numQuietPlies = this.numQuietPlies;
+            info.epTarget = this.epTarget;
             this.moveStack.push(info);
             ++this.numQuietPlies; // assume this is a quiet ply unless we see a pawn move or a capture
             this.currentPlayerInCheck = undefined; // we no longer know if the current player is in check

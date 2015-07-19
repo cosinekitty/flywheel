@@ -141,7 +141,7 @@ module Flywheel {
         public dest: number;            // the board offset where the piece will end up
         public prom: NeutralPiece;      // if not a pawn promotion, Empty. otherwise, the piece being promoted to
         public score: Score;            // if not null, how good/bad the move is from the moving side's point of view
-        public ply: number;             // sanity check that the move pertains to the same ply counter on the board
+        public ply: number;             // sanity check that the move pertains to the same ply counter on the board : FIXFIXFIX - replace with hash
 
         public constructor(source:number, dest:number, prom:NeutralPiece = NeutralPiece.Empty, score:number = null, ply:number = null) {
             this.source = source;
@@ -182,26 +182,6 @@ module Flywheel {
         public castlingRookDest: number;    // if castling move, where the rook landed
         public playerWasInCheck: boolean;
         public numQuietPlies: number;
-
-        public constructor(move:Move,
-                           capture:Square,
-                           wkc:boolean,
-                           wqc:boolean,
-                           bkc:boolean,
-                           bqc:boolean,
-                           check:boolean,
-                           numQuietPlies:number,
-                           epTarget:number) {
-            this.move = move;
-            this.capture = capture;
-            this.whiteCanCastleKingSide = wkc;
-            this.whiteCanCastleQueenSide = wqc;
-            this.blackCanCastleKingSide = bkc;
-            this.blackCanCastleQueenSide = bqc;
-            this.playerWasInCheck = check;
-            this.numQuietPlies = numQuietPlies;
-            this.epTarget = epTarget;
-        }
     }
 
     /*
@@ -798,16 +778,17 @@ module Flywheel {
             this.square[move.source] = Square.Empty;
 
             // Preserve information needed for PopMove() to undo this move.
-            var info:MoveState = new MoveState(
-                move.Clone(),   // clone the move so we protect from any caller side-effects
-                capture,
-                this.whiteCanCastleKingSide,
-                this.whiteCanCastleQueenSide,
-                this.blackCanCastleKingSide,
-                this.blackCanCastleQueenSide,
-                this.currentPlayerInCheck,
-                this.numQuietPlies,
-                this.epTarget);
+            var info:MoveState = new MoveState();
+
+            info.move = move.Clone();   // clone the move so we protect from any caller side-effects
+            info.capture = capture;
+            info.whiteCanCastleKingSide  = this.whiteCanCastleKingSide;
+            info.whiteCanCastleQueenSide = this.whiteCanCastleQueenSide;
+            info.blackCanCastleKingSide  = this.blackCanCastleKingSide;
+            info.blackCanCastleQueenSide = this.blackCanCastleQueenSide;
+            info.playerWasInCheck = this.currentPlayerInCheck;
+            info.numQuietPlies = this.numQuietPlies;
+            info.epTarget = this.epTarget;
 
             this.moveStack.push(info);
 
