@@ -52,6 +52,8 @@ def NextTuple():
 with open('hash.ts', 'wt') as outfile:
     outfile.write(StartTag + '\n')
     outfile.write('\n')
+    outfile.write('var WhiteToMoveSalt = ' + NextTuple() + ';\n')
+    outfile.write('\n')
     outfile.write('var CastlingRightsSalt = {\n')
     outfile.write('    wk: ' + NextTuple() + '\n')
     outfile.write(',   wq: ' + NextTuple() + '\n')
@@ -59,9 +61,20 @@ with open('hash.ts', 'wt') as outfile:
     outfile.write(',   bq: ' + NextTuple() + '\n')
     outfile.write('};\n')
     outfile.write('\n')
+
+    outfile.write('var EnPassantFileSalt = [\n')
+    delim = ' '
+    for epFile in 'abcdefgh':
+        outfile.write(delim)
+        delim = ','
+        outfile.write('   ' + NextTuple() + '  // ' + epFile + '\n')
+    outfile.write('];\n')
+
+    outfile.write('\n')
     outfile.write('var PieceHashSalt = [\n')
     outfile.write('    //               Pawn                               Knight                              Bishop                               Rook                               Queen                               King\n')
     outfile.write('    // ---------------------------------   ---------------------------------   --------------------------------    ---------------------------------   --------------------------------    --------------------------------\n')
+
     delim = ' '
     for squareIndex in xrange(64):
         outfile.write(delim)
@@ -70,7 +83,7 @@ with open('hash.ts', 'wt') as outfile:
         for pieceIndex in xrange(12):
             if pieceIndex % 6 == 0:
                 if pieceIndex == 6:
-                    outfile.write('   // ' + 'abcdefgh'[squareIndex / 8] + '12345678'[squareIndex % 8] + ' W\n    ')
+                    outfile.write('   // ' + 'abcdefgh'[squareIndex % 8] + '12345678'[squareIndex / 8] + ' W\n    ')
             outfile.write(', ')
             outfile.write(NextTuple())
         outfile.write(' ] //    B\n')
