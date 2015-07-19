@@ -433,10 +433,12 @@ module Flywheel {
         }
 
         public GetNonStalemateDrawType(): DrawType {
-            // FIXFIXFIX - detect draws by threefold repetition.
-
             if (this.numQuietPlies >= 100) {
                 return DrawType.FiftyMoveRule;
+            }
+
+            if (this.RepetitionCount() >= 3) {
+                return DrawType.ThreefoldRepetition;
             }
 
             if (this.IsMaterialDraw()) {
@@ -584,6 +586,20 @@ module Flywheel {
             }
 
             return false;   // assume checkmate is still theoretically possible, even if it cannot not forced
+        }
+
+        public RepetitionCount():number {
+            let rep:number = 1;     // every position we are in has occurred at least once, by definition
+
+            // Count how many times it has been the same player's turn with this same hash value.
+            // The most recent possible repetition was 2 full moves ago (4 plies).
+            for (let index = this.moveStack.length - 4; index >= 0; index -= 2) {
+                if (this.moveStack[index].hash.Equals(this.hash)) {
+                    ++rep;
+                }
+            }
+
+            return rep;
         }
 
         private IsPlayerInCheck(side:Side): boolean {
