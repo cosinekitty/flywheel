@@ -178,6 +178,17 @@ var Flywheel;
         return Move;
     })();
     Flywheel.Move = Move;
+    var HashValue = (function () {
+        function HashValue(a, b, c) {
+            this.a = a;
+            this.b = b;
+            this.c = c;
+        }
+        HashValue.prototype.Clone = function () {
+            return new HashValue(this.a, this.b, this.c);
+        };
+        return HashValue;
+    })();
     var MoveState = (function () {
         function MoveState() {
         }
@@ -1186,9 +1197,9 @@ var Flywheel;
             this.Update();
         };
         Board.XorHash = function (hash, salt) {
-            hash[0] ^= salt[0];
-            hash[1] ^= salt[1];
-            hash[2] ^= salt[2];
+            hash.a ^= salt[0];
+            hash.b ^= salt[1];
+            hash.c ^= salt[2];
         };
         Board.FormatHex = function (x) {
             var s = (x | 0).toString(16);
@@ -1198,10 +1209,10 @@ var Flywheel;
             return s;
         };
         Board.prototype.GetHash = function () {
-            return Board.FormatHex(this.hash[0]) + Board.FormatHex(this.hash[1]) + Board.FormatHex(this.hash[2]);
+            return Board.FormatHex(this.hash.a) + Board.FormatHex(this.hash.b) + Board.FormatHex(this.hash.c);
         };
         Board.prototype.CalcHash = function () {
-            var hash = [0, 0, 0];
+            var hash = new HashValue(0, 0, 0);
             if (this.sideToMove === Side.White) {
                 Board.XorHash(hash, WhiteToMoveSalt);
             }

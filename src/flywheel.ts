@@ -169,6 +169,22 @@ module Flywheel {
         }
     }
 
+    class HashValue {
+        public a:number;
+        public b:number;
+        public c:number;
+
+        public constructor(a:number, b:number, c:number) {
+            this.a = a;
+            this.b = b;
+            this.c = c;
+        }
+
+        public Clone():HashValue {
+            return new HashValue(this.a, this.b, this.c);
+        }
+    }
+
     class MoveState {       // represents the information needed to undo a move from the chess board
         public move: Move;
         public capture: Square;
@@ -339,7 +355,7 @@ module Flywheel {
         private fullMoveNumber: number; // starts at 1 for beginning of game, incremented after each Black move
         private epTarget: number;       // board offset behind a pawn just pushed 2 squares, otherwise 0
         private initialFen: string;     // if defined, the FEN for the starting position
-        private hash: number[];         // triplet of 32-bit hash integers
+        private hash: HashValue;
 
         public constructor(fen:string = null) {
             this.Init();
@@ -1236,10 +1252,10 @@ module Flywheel {
             this.Update();
         }
 
-        private static XorHash(hash:number[], salt:number[]):void {
-            hash[0] ^= salt[0];
-            hash[1] ^= salt[1];
-            hash[2] ^= salt[2];
+        private static XorHash(hash:HashValue, salt:number[]):void {
+            hash.a ^= salt[0];
+            hash.b ^= salt[1];
+            hash.c ^= salt[2];
         }
 
         private static FormatHex(x:number):string {
@@ -1251,11 +1267,11 @@ module Flywheel {
         }
 
         public GetHash(): string {
-            return Board.FormatHex(this.hash[0]) + Board.FormatHex(this.hash[1]) + Board.FormatHex(this.hash[2]);
+            return Board.FormatHex(this.hash.a) + Board.FormatHex(this.hash.b) + Board.FormatHex(this.hash.c);
         }
 
-        private CalcHash(): number[] {
-            let hash:number[] = [0, 0, 0];
+        private CalcHash(): HashValue {
+            let hash:HashValue = new HashValue(0, 0, 0);
 
             if (this.sideToMove === Side.White) {
                 Board.XorHash(hash, WhiteToMoveSalt);
