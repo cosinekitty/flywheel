@@ -40,49 +40,40 @@ random.seed(8675309)
 StartTag = '//=====BEGIN HASH SALT====='
 EndTag   = '//=====END HASH SALT====='
 
-PieceName = [
-    'Empty',
-
-    'White Pawn',
-    'White Knight',
-    'White Bishop',
-    'White Rook',
-    'White Queen',
-    'White King',
-
-    'Black Pawn',
-    'Black Knight',
-    'Black Bishop',
-    'Black Rook',
-    'Black Queen',
-    'Black King'
-]
-
 def NextRand():
     s = hex(random.getrandbits(32))[2:-1]
     while len(s) < 8:
         s = '0' + s
     return '0x' + s
 
+def NextTuple():
+    return '[' + NextRand() + ',' + NextRand() + ',' + NextRand() + ']'
+
 with open('hash.ts', 'wt') as outfile:
     outfile.write(StartTag + '\n')
-    outfile.write('let PieceHashSalt = [\n')
-    outfile.write('    //          Pawn                     Knight                    Bishop                     Rook                     Queen                      King\n')
-    outfile.write('    // ----------------------    ----------------------    ----------------------    ----------------------    ----------------------    ----------------------\n')
+    outfile.write('\n')
+    outfile.write('var CastlingRightsSalt = {\n')
+    outfile.write('    wk: ' + NextTuple() + '\n')
+    outfile.write(',   wq: ' + NextTuple() + '\n')
+    outfile.write(',   bk: ' + NextTuple() + '\n')
+    outfile.write(',   bq: ' + NextTuple() + '\n')
+    outfile.write('};\n')
+    outfile.write('\n')
+    outfile.write('var PieceHashSalt = [\n')
+    outfile.write('    //               Pawn                               Knight                              Bishop                               Rook                               Queen                               King\n')
+    outfile.write('    // ---------------------------------   ---------------------------------   --------------------------------    ---------------------------------   --------------------------------    --------------------------------\n')
     delim = ' '
     for squareIndex in xrange(64):
         outfile.write(delim)
         delim = ','
-        outfile.write('   [ [0, 0]\n    ')
+        outfile.write('   [ [0, 0, 0]\n    ')
         for pieceIndex in xrange(12):
             if pieceIndex % 6 == 0:
                 if pieceIndex == 6:
-                    outfile.write('    // ' + 'abcdefgh'[squareIndex / 8] + '12345678'[squareIndex % 8] + ' (White)\n    ')
-            outfile.write(', [')
-            outfile.write(NextRand())
+                    outfile.write('   // ' + 'abcdefgh'[squareIndex / 8] + '12345678'[squareIndex % 8] + ' W\n    ')
             outfile.write(', ')
-            outfile.write(NextRand())
-            outfile.write(']')
-        outfile.write(' ]  //    (Black)\n')
+            outfile.write(NextTuple())
+        outfile.write(' ] //    B\n')
     outfile.write('];\n')
+    outfile.write('\n')
     outfile.write(EndTag + '\n')
