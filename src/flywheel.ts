@@ -1353,7 +1353,9 @@ module Flywheel {
         }
 
         private static FormatHex(x:number):string {
-            let s:string = (x | 0).toString(16);
+            // We want to convert negative integers to their 32-bit hex representation
+            // without a minus sign showing up.
+            let s:string = ((x < 0) ? ((0xffffffff + x) + 1) : x).toString(16);
             while (s.length < 8) {
                 s = '0' + s;
             }

@@ -1275,7 +1275,9 @@ var Flywheel;
             hash.c ^= salt[2];
         };
         Board.FormatHex = function (x) {
-            var s = (x | 0).toString(16);
+            // We want to convert negative integers to their 32-bit hex representation
+            // without a minus sign showing up.
+            var s = ((x < 0) ? ((0xffffffff + x) + 1) : x).toString(16);
             while (s.length < 8) {
                 s = '0' + s;
             }
