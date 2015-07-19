@@ -11,6 +11,7 @@ module FlyBoardTest {
             summary.className = 'TestSummary FailedTest';
 
             var board:Flywheel.Board = Test.InitBoard();
+            board.SetDebugMode(true);
             if (!board) return;
             if (!Test.CheckInitBoardContents(board)) return;
             if (!Test.TestInitLegalMoves(board)) return;

@@ -59,6 +59,7 @@ var Flywheel;
         Side[Side["Black"] = 2] = "Black";
     })(Flywheel.Side || (Flywheel.Side = {}));
     var Side = Flywheel.Side;
+    var OppositeSide = [Side.Neither, Side.Black, Side.White];
     var Utility = (function () {
         function Utility() {
         }
@@ -187,6 +188,9 @@ var Flywheel;
         HashValue.prototype.Clone = function () {
             return new HashValue(this.a, this.b, this.c);
         };
+        HashValue.prototype.Equals = function (other) {
+            return (this.a === other.a) && (this.b === other.b) && (this.c === other.c);
+        };
         return HashValue;
     })();
     var MoveState = (function () {
@@ -265,6 +269,7 @@ var Flywheel;
     var Board = (function () {
         function Board(fen) {
             if (fen === void 0) { fen = null; }
+            this.debugMode = false;
             this.Init();
             if (fen) {
                 this.SetForsythEdwardsNotation(fen);
@@ -317,6 +322,9 @@ var Flywheel;
                 throw "Invalid board offset " + ofs;
             }
             return alg;
+        };
+        Board.prototype.SetDebugMode = function (debugMode) {
+            this.debugMode = debugMode;
         };
         Board.prototype.Clone = function () {
             var copy = new Board(this.initialFen);
@@ -742,6 +750,39 @@ var Flywheel;
                 }
             }
         };
+        Board.prototype.Replace = function (ofs, newContents) {
+            // Updates the contents of a square while keeping the hash value current.
+            var oldContents = this.square[ofs];
+            this.square[ofs] = newContents;
+            var salt = PieceHashSalt[Board.IndexTable[ofs]];
+            Board.XorHash(this.hash, salt[oldContents]);
+            Board.XorHash(this.hash, salt[newContents]);
+            return oldContents;
+        };
+        Board.prototype.ClearWhiteKingSideCastling = function () {
+            if (this.whiteCanCastleKingSide) {
+                this.whiteCanCastleKingSide = false;
+                Board.XorHash(this.hash, CastlingRightsSalt.wk);
+            }
+        };
+        Board.prototype.ClearWhiteQueenSideCastling = function () {
+            if (this.whiteCanCastleQueenSide) {
+                this.whiteCanCastleQueenSide = false;
+                Board.XorHash(this.hash, CastlingRightsSalt.wq);
+            }
+        };
+        Board.prototype.ClearBlackKingSideCastling = function () {
+            if (this.blackCanCastleKingSide) {
+                this.blackCanCastleKingSide = false;
+                Board.XorHash(this.hash, CastlingRightsSalt.bk);
+            }
+        };
+        Board.prototype.ClearBlackQueenSideCastling = function () {
+            if (this.blackCanCastleQueenSide) {
+                this.blackCanCastleQueenSide = false;
+                Board.XorHash(this.hash, CastlingRightsSalt.bq);
+            }
+        };
         Board.prototype.PushMove = function (move) {
             // Before risking corruption of the board state, verify
             // that the move passed in pertains to the same number of turns
@@ -751,14 +792,16 @@ var Flywheel;
             if (move.ply !== this.moveStack.length) {
                 throw 'Board is at ply number ' + this.moveStack.length + ' but move is for ply ' + move.ply;
             }
+            // Store current hash value before modifying it.
+            var info = new MoveState();
+            info.hash = this.hash.Clone();
+            // Toggle white/black turn hash salt on every turn.
+            Board.XorHash(this.hash, WhiteToMoveSalt);
             // Perform the state changes needed by the vast majority of moves.
             var dir = move.dest - move.source;
-            var piece = this.square[move.source];
-            var capture = this.square[move.dest];
-            this.square[move.dest] = piece;
-            this.square[move.source] = Square.Empty;
+            var piece = this.Replace(move.source, Square.Empty);
+            var capture = this.Replace(move.dest, piece);
             // Preserve information needed for PopMove() to undo this move.
-            var info = new MoveState();
             info.move = move.Clone(); // clone the move so we protect from any caller side-effects
             info.capture = capture;
             info.whiteCanCastleKingSide = this.whiteCanCastleKingSide;
@@ -768,17 +811,22 @@ var Flywheel;
             info.playerWasInCheck = this.currentPlayerInCheck;
             info.numQuietPlies = this.numQuietPlies;
             info.epTarget = this.epTarget;
+            info.epFile = this.epFile;
             this.moveStack.push(info);
             ++this.numQuietPlies; // assume this is a quiet ply unless we see a pawn move or a capture
             this.currentPlayerInCheck = undefined; // we no longer know if the current player is in check
-            this.epTarget = 0; // assume no en passant target unless this is a pawn moving 2 squares
+            // Undo en passant hash modifications from previous turn, if any.
+            if (this.epFile !== null) {
+                Board.XorHash(this.hash, EnPassantFileSalt[this.epFile]);
+            }
+            this.epTarget = 0; // Assume no en passant target unless this is a pawn moving 2 squares.
             if (capture !== Square.Empty) {
                 this.numQuietPlies = 0;
             }
             // Now check for the special cases: castling, en passant, pawn promotion.
             if (move.prom !== NeutralPiece.Empty) {
-                // Pawn promotion. Override what we put in the destination square.
-                this.square[move.dest] = Utility.SidePieces[this.sideToMove][move.prom];
+                // Pawn promotion. Replace the pawn with the promoted piece in the destination square.
+                this.Replace(move.dest, Utility.SidePieces[this.sideToMove][move.prom]);
                 // A pawn is moving, so reset the quiet ply counter.
                 this.numQuietPlies = 0;
             }
@@ -793,23 +841,23 @@ var Flywheel;
                             // Pawn is moving like a eastward capture, but target square was empty.
                             // Assume this is an en passant capture.
                             info.epCaptureOffset = move.source + Direction.East;
-                            this.square[info.epCaptureOffset] = Square.Empty;
+                            this.Replace(info.epCaptureOffset, Square.Empty); // remove captured pawn
                         }
                         else if (dir === Direction.NorthWest || dir === Direction.SouthWest) {
                             // Pawn is moving like a westward capture, but target square was empty.
                             // Assume this is an en passant capture.
                             info.epCaptureOffset = move.source + Direction.West;
-                            this.square[info.epCaptureOffset] = Square.Empty;
+                            this.Replace(info.epCaptureOffset, Square.Empty); // remove captured pawn
                         }
                         else if (dir === 2 * Direction.North) {
                             // A White pawn is moving 2 squares forward.
                             // This might indicate an en passant opportunity for Black's next turn.
-                            this.epTarget = move.source + Direction.North;
+                            this.epTarget = move.source + Direction.North, Side.Black;
                         }
                         else if (dir === 2 * Direction.South) {
                             // A Black pawn is moving 2 squares forward.
                             // This might indicate an en passant opportunity for White's next turn.
-                            this.epTarget = move.source + Direction.South;
+                            this.epTarget = move.source + Direction.South, Side.White;
                         }
                     }
                 }
@@ -817,42 +865,44 @@ var Flywheel;
                     // Any king move disables castling for that player.
                     // We also keep the king offset variables up to date.
                     if (piece === Square.WhiteKing) {
-                        this.whiteCanCastleKingSide = this.whiteCanCastleQueenSide = false;
+                        this.ClearWhiteKingSideCastling();
+                        this.ClearWhiteQueenSideCastling();
                         this.whiteKingOfs = move.dest;
                     }
                     else {
-                        this.blackCanCastleKingSide = this.blackCanCastleQueenSide = false;
+                        this.ClearBlackKingSideCastling();
+                        this.ClearBlackQueenSideCastling();
                         this.blackKingOfs = move.dest;
                     }
                     if (dir === 2 * Direction.East) {
                         // Assume this is kingside castling.  Move the rook around the king.
                         info.castlingRookSource = move.source + 3 * Direction.East;
                         info.castlingRookDest = move.source + Direction.East;
-                        this.square[info.castlingRookDest] = this.square[info.castlingRookSource];
-                        this.square[info.castlingRookSource] = Square.Empty;
+                        var rook = this.Replace(info.castlingRookSource, Square.Empty);
+                        this.Replace(info.castlingRookDest, rook);
                     }
                     else if (dir === 2 * Direction.West) {
                         // Assume this is queenside castling.  Move the rook around the king.
                         info.castlingRookSource = move.source + 4 * Direction.West;
                         info.castlingRookDest = move.source + Direction.West;
-                        this.square[info.castlingRookDest] = this.square[info.castlingRookSource];
-                        this.square[info.castlingRookSource] = Square.Empty;
+                        var rook = this.Replace(info.castlingRookSource, Square.Empty);
+                        this.Replace(info.castlingRookDest, rook);
                     }
                 }
                 else if (piece === Square.WhiteRook) {
                     if (move.source === 21) {
-                        this.whiteCanCastleQueenSide = false;
+                        this.ClearWhiteQueenSideCastling();
                     }
                     else if (move.source === 28) {
-                        this.whiteCanCastleKingSide = false;
+                        this.ClearWhiteKingSideCastling();
                     }
                 }
                 else if (piece === Square.BlackRook) {
                     if (move.source === 91) {
-                        this.blackCanCastleQueenSide = false;
+                        this.ClearBlackQueenSideCastling();
                     }
                     else if (move.source === 98) {
-                        this.blackCanCastleKingSide = false;
+                        this.ClearBlackKingSideCastling();
                     }
                 }
             }
@@ -864,16 +914,16 @@ var Flywheel;
             // 4. If we didn't set blackCanCastleKingSide=false in step #1, we might think Black could castle kingside!
             switch (move.dest) {
                 case 21:
-                    this.whiteCanCastleQueenSide = false;
+                    this.ClearWhiteQueenSideCastling();
                     break;
                 case 28:
-                    this.whiteCanCastleKingSide = false;
+                    this.ClearWhiteKingSideCastling();
                     break;
                 case 91:
-                    this.blackCanCastleQueenSide = false;
+                    this.ClearBlackQueenSideCastling();
                     break;
                 case 98:
-                    this.blackCanCastleKingSide = false;
+                    this.ClearBlackKingSideCastling();
                     break;
             }
             // After each move by Black, we increment the full move number.
@@ -884,6 +934,18 @@ var Flywheel;
             var swap = this.sideToMove;
             this.sideToMove = this.enemy;
             this.enemy = swap;
+            // Toggle hash values for en passant capture, if available for opponent.
+            this.epFile = this.GetEnPassantFile(this.epTarget);
+            if (this.epFile !== null) {
+                Board.XorHash(this.hash, EnPassantFileSalt[this.epFile]);
+            }
+            if (this.debugMode) {
+                // This really slows things down, but validates that the hash function is working correctly.
+                var checkHash = this.CalcHash();
+                if (!checkHash.Equals(this.hash)) {
+                    throw 'Hash mismatch in PushMove()';
+                }
+            }
         };
         Board.prototype.PopMove = function () {
             if (this.moveStack.length === 0) {
@@ -940,6 +1002,9 @@ var Flywheel;
             }
             // Restore en passant state.
             this.epTarget = info.epTarget;
+            this.epFile = info.epFile;
+            // Restore the hash value.
+            this.hash = info.hash;
             return info.move; // return the popped move back to the caller, for algorithmic symmetry.
         };
         Board.prototype.RawMoves = function () {
@@ -1231,34 +1296,47 @@ var Flywheel;
             for (var index = 0; index < 64; ++index) {
                 Board.XorHash(hash, PieceHashSalt[index][this.square[Board.ValidOffsetList[index]]]);
             }
-            if (this.epTarget !== 0) {
-                // Subtle: the ep target as defined by FEN is not quite what we need.
-                // There is no reason to distinguish two positions where different
-                // pawns have just moved, if there is no way for the current player
-                // to exploit either move with an en passant capture.
-                // So we only include EP file bits if at least one
-                // pawn exists that can make an en passant capture to that file.
-                // Tricky: the pawn might not actually be able to make the capture because it is pinned.
-                // For the sake of efficiency, we don't worry about that.
-                var epFile = 7 & Board.IndexTable[this.epTarget];
-                if (this.sideToMove === Side.White) {
+            var epFile = this.GetEnPassantFile(this.epTarget);
+            if (epFile !== null) {
+                Board.XorHash(hash, EnPassantFileSalt[epFile]);
+            }
+            return hash;
+        };
+        Board.prototype.GetEnPassantFile = function (epTarget) {
+            // Subtle: the ep target as defined by FEN is not quite what we need.
+            // There is no reason to distinguish two positions where different
+            // pawns have just moved, if there is no way for the current player
+            // to exploit either move with an en passant capture.
+            // So we only include EP file bits if at least one
+            // pawn exists that can make an en passant capture to that file.
+            // Tricky: the pawn might not actually be able to make the capture
+            // because it is pinned or the player is in check.
+            // For the sake of efficiency, we don't worry about that.
+            if (epTarget !== 0) {
+                var rank = Board.RankNumber[epTarget];
+                if (rank === 6) {
+                    // This epTarget indicates that Black just moved a pawn 2 squares toward the south.
                     // White Pawns capture northeast and northwest.
                     // Therefore look southwest and southeast from the ep target for a white pawn.
-                    if (this.square[this.epTarget + Direction.SouthEast] === Square.WhitePawn ||
-                        this.square[this.epTarget + Direction.SouthWest] === Square.WhitePawn) {
-                        Board.XorHash(hash, EnPassantFileSalt[epFile]);
+                    if (this.square[epTarget + Direction.SouthEast] === Square.WhitePawn ||
+                        this.square[epTarget + Direction.SouthWest] === Square.WhitePawn) {
+                        return 7 & Board.IndexTable[epTarget];
+                    }
+                }
+                else if (rank === 3) {
+                    // This epTarget indicates that White just moved a pawn 2 squares toward the north.
+                    // Black Pawns capture southeast and southwest.
+                    // Therefore look northeast and northwest from the ep target for a black pawn.
+                    if (this.square[epTarget + Direction.NorthEast] === Square.BlackPawn ||
+                        this.square[epTarget + Direction.NorthWest] === Square.BlackPawn) {
+                        return 7 & Board.IndexTable[epTarget];
                     }
                 }
                 else {
-                    // Black Pawns capture southeast and southwest.
-                    // Therefore look northeast and northwest from the ep target for a black pawn.
-                    if (this.square[this.epTarget + Direction.NorthEast] === Square.BlackPawn ||
-                        this.square[this.epTarget + Direction.NorthWest] === Square.BlackPawn) {
-                        Board.XorHash(hash, EnPassantFileSalt[epFile]);
-                    }
+                    throw 'Invalid en passant target offset = ' + epTarget + ' (' + Board.AlgTable[epTarget] + ')';
                 }
             }
-            return hash;
+            return null;
         };
         Board.prototype.Update = function () {
             // Search the board's contents for the kings.
@@ -1316,6 +1394,7 @@ var Flywheel;
             if (this.IsPlayerInCheck(this.enemy)) {
                 throw 'Illegal position: side not having the turn is in check.';
             }
+            this.epFile = this.GetEnPassantFile(this.epTarget);
             this.hash = this.CalcHash();
         };
         Board.ValidateInventory = function (inventory, side) {
@@ -1591,6 +1670,7 @@ var Flywheel;
             var ep = 0;
             if (field[3] !== '-') {
                 if (/[a-h][36]/.test(field[3])) {
+                    // FIXFIXFIX - validate that rank matches side to move: 3 for Black, 6 for White.
                     ep = Board.Offset(field[3]);
                 }
                 else {

@@ -13,6 +13,7 @@ var FlyBoardTest;
             summary.innerText = 'FAILURE';
             summary.className = 'TestSummary FailedTest';
             var board = Test.InitBoard();
+            board.SetDebugMode(true);
             if (!board)
                 return;
             if (!Test.CheckInitBoardContents(board))
