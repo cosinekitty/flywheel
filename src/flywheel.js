@@ -143,18 +143,16 @@ var Flywheel;
     })(Flywheel.Score || (Flywheel.Score = {}));
     var Score = Flywheel.Score;
     var Move = (function () {
-        function Move(source, dest, prom, score, ply) {
+        function Move(source, dest, prom, score, hash_a) {
             if (prom === void 0) { prom = NeutralPiece.Empty; }
-            if (score === void 0) { score = null; }
-            if (ply === void 0) { ply = null; }
             this.source = source;
             this.dest = dest;
             this.prom = prom;
             this.score = score;
-            this.ply = ply;
+            this.hash_a = hash_a;
         }
         Move.prototype.Clone = function () {
-            return new Move(this.source, this.dest, this.prom, this.score, this.ply);
+            return new Move(this.source, this.dest, this.prom, this.score, this.hash_a);
         };
         Move.prototype.toString = function () {
             var notation = Board.Algebraic(this.source) + Board.Algebraic(this.dest);
@@ -351,11 +349,11 @@ var Flywheel;
             var movelist = [];
             for (var _i = 0; _i < rawlist.length; _i++) {
                 var raw = rawlist[_i];
-                // Before we make a move, we have to set the move.ply
-                // to match the current number of turns that have been played
-                // on the board.  This is an inexpensive way to catch bugs
+                // Before we make a move, we have to set the move.hash_a
+                // to match the first 32 bits of the board's hash value.
+                // This is an inexpensive way to catch bugs
                 // where a caller tries to play a move for the wrong board position.
-                raw.ply = this.moveStack.length;
+                raw.hash_a = this.hash.a;
                 // Test each move for legality by making the move and
                 // looking to see if the player who just moved is in check.
                 this.PushMove(raw);
@@ -407,7 +405,7 @@ var Flywheel;
                     this.addMoves[sq].call(this, movelist, source);
                     for (var _b = 0; _b < movelist.length; _b++) {
                         var move = movelist[_b];
-                        move.ply = this.moveStack.length;
+                        move.hash_a = this.hash.a;
                         this.PushMove(move);
                         var legal = !this.IsPlayerInCheck(this.enemy);
                         this.PopMove();
@@ -798,12 +796,9 @@ var Flywheel;
         };
         Board.prototype.PushMove = function (move) {
             // Before risking corruption of the board state, verify
-            // that the move passed in pertains to the same number of turns
-            // (called "ply number") that have been applied to the board.
-            // The LegalMoves() function copies the ply number from the board
-            // position into each move it generates.
-            if (move.ply !== this.moveStack.length) {
-                throw 'Board is at ply number ' + this.moveStack.length + ' but move is for ply ' + move.ply;
+            // that the move passed in pertains to the same board position it was generated for.
+            if (move.hash_a !== this.hash.a) {
+                throw 'Move was generated for a different board position.';
             }
             // Store current hash value before modifying it.
             var info = new MoveState();

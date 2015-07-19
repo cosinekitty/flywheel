@@ -143,18 +143,18 @@ module Flywheel {
         public dest: number;            // the board offset where the piece will end up
         public prom: NeutralPiece;      // if not a pawn promotion, Empty. otherwise, the piece being promoted to
         public score: Score;            // if not null, how good/bad the move is from the moving side's point of view
-        public ply: number;             // sanity check that the move pertains to the same ply counter on the board : FIXFIXFIX - replace with hash
+        public hash_a: number;          // sanity check that the move pertains to the position we are pushing it onto
 
-        public constructor(source:number, dest:number, prom:NeutralPiece = NeutralPiece.Empty, score:number = null, ply:number = null) {
+        public constructor(source:number, dest:number, prom:NeutralPiece = NeutralPiece.Empty, score?:number, hash_a?:number) {
             this.source = source;
             this.dest = dest;
             this.prom = prom;
             this.score = score;
-            this.ply = ply;
+            this.hash_a = hash_a;
         }
 
         public Clone(): Move {
-            return new Move(this.source, this.dest, this.prom, this.score, this.ply);
+            return new Move(this.source, this.dest, this.prom, this.score, this.hash_a);
         }
 
         public toString(): string {      // convert the move to long algebraic form: 'e2e4' or 'e7e8q' (promotion)
@@ -408,11 +408,11 @@ module Flywheel {
             let rawlist:Move[] = this.RawMoves();
             let movelist:Move[] = [];
             for (let raw of rawlist) {
-                // Before we make a move, we have to set the move.ply
-                // to match the current number of turns that have been played
-                // on the board.  This is an inexpensive way to catch bugs
+                // Before we make a move, we have to set the move.hash_a
+                // to match the first 32 bits of the board's hash value.
+                // This is an inexpensive way to catch bugs
                 // where a caller tries to play a move for the wrong board position.
-                raw.ply = this.moveStack.length;
+                raw.hash_a = this.hash.a;
 
                 // Test each move for legality by making the move and
                 // looking to see if the player who just moved is in check.
@@ -471,7 +471,7 @@ module Flywheel {
                     let movelist:Move[] = [];
                     this.addMoves[sq].call(this, movelist, source);
                     for (let move of movelist) {
-                        move.ply = this.moveStack.length;
+                        move.hash_a = this.hash.a;
                         this.PushMove(move);
                         let legal:boolean = !this.IsPlayerInCheck(this.enemy);
                         this.PopMove();
@@ -846,12 +846,9 @@ module Flywheel {
 
         public PushMove(move: Move): void {
             // Before risking corruption of the board state, verify
-            // that the move passed in pertains to the same number of turns
-            // (called "ply number") that have been applied to the board.
-            // The LegalMoves() function copies the ply number from the board
-            // position into each move it generates.
-            if (move.ply !== this.moveStack.length) {
-                throw 'Board is at ply number ' + this.moveStack.length + ' but move is for ply ' + move.ply;
+            // that the move passed in pertains to the same board position it was generated for.
+            if (move.hash_a !== this.hash.a) {
+                throw 'Move was generated for a different board position.';
             }
 
             // Store current hash value before modifying it.
