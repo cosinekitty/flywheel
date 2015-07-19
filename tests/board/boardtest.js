@@ -61,7 +61,7 @@ var FlyBoardTest;
                 span.innerText = 'FAILURE: IsBlackToMove did not return false.';
                 return null;
             }
-            span.innerText = 'OK';
+            span.innerText = 'OK: ' + board.GetHash();
             span.className = 'PassedTest';
             return board;
         };
