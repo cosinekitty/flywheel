@@ -1,2 +1,9 @@
 These chess pieces came from:
 https://github.com/pychess/pychess/tree/master/pieces
+
+On Debian, do this to install rsvg converter utility:
+sudo apt-get install librsvg2-bin
+
+Then you can run the conversion script to generate the png files:
+
+./makepng

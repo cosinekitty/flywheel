@@ -1,0 +1,9 @@
+#!/bin/bash
+
+PIXELS=100
+DIR=merida
+
+for PIECE in wp wn wb wr wq wk bp bn bb br bq bk; do
+    rsvg-convert $DIR/svg/$PIECE.svg -o $DIR/png/$PIECE.png -w $PIXELS -h $PIXELS
+done
+
