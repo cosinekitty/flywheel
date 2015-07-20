@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PIXELS=100
+PIXELS=70
 DIR=merida
 
 for PIECE in wp wn wb wr wq wk bp bn bb br bq bk; do

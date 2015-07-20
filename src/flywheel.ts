@@ -392,6 +392,13 @@ module Flywheel {
             return this.square[Board.Offset(alg)];
         }
 
+        public GetSquareByCoords(x:number, y:number):Square {
+            if (x !== (x & 7) || y !== (y & 7)) {
+                throw 'Invalid chess board coordinates';
+            }
+            return this.square[21 + x + (10*y)];
+        }
+
         public IsWhiteToMove(): boolean {
             return this.sideToMove === Side.White;
         }

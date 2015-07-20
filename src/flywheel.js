@@ -335,6 +335,12 @@ var Flywheel;
         Board.prototype.GetSquare = function (alg) {
             return this.square[Board.Offset(alg)];
         };
+        Board.prototype.GetSquareByCoords = function (x, y) {
+            if (x !== (x & 7) || y !== (y & 7)) {
+                throw 'Invalid chess board coordinates';
+            }
+            return this.square[21 + x + (10 * y)];
+        };
         Board.prototype.IsWhiteToMove = function () {
             return this.sideToMove === Side.White;
         };
@@ -2318,4 +2324,3 @@ var Flywheel;
             [0x5bc2e69c, 0x12f33fc9, 0x4188b799], [0x06df0a17, 0x94c0b1cb, 0x35162120], [0xa9f9654c, 0x9b8c5813, 0xb228a184], [0x8a722a51, 0x71f16c13, 0x0c9ded30], [0x1cd1107c, 0xcdd12672, 0xe207ed90], [0xcf71e527, 0x7aa05aa4, 0x683d95b0]] //    B
     ];
 })(Flywheel || (Flywheel = {}));
-//# sourceMappingURL=flywheel.js.map
