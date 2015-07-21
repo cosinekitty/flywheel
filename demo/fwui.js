@@ -74,7 +74,7 @@ var FwDemo;
     }
     function InitBoardDisplay() {
         var x, y;
-        var html = '<div id="RotateButton" style="position:absolute; width:64px; height:64px; top:0px; left:600px;" title="Rotate board"><img src="../icon/loop-circular-8x.png" width="64" height="64" alt="Rotate board"></div>';
+        var html = '<div id="RotateButton" style="position:absolute; width:64px; height:64px; top:3px; left:590px;" title="Rotate board"><img class="ShadowFilter" src="../icon/loop-circular-8x.png" width="64" height="64" alt="Rotate board"></div>';
         for (y = 0; y < 8; ++y) {
             for (x = 0; x < 8; ++x) {
                 html += MakeImageContainer(x, y);

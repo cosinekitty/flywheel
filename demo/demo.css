@@ -10,3 +10,10 @@ body {
     font-family: monospace;
     font-size: 14px;
 }
+
+/* http://demosthenes.info/blog/598/boxshadow-property-vs-dropshadow-filter-a-complete-comparison */
+/* http://stackoverflow.com/questions/3186688/drop-shadow-for-png-image-in-css */
+.ShadowFilter {
+    filter: drop-shadow(4px 4px 3px rgba(0,0,0,0.3));
+    -webkit-filter: drop-shadow(4px 4px 3px rgba(0,0,0,0.3));
+}
