@@ -1,3 +1,11 @@
+/*
+    demo.css  -  Don Cross  -  stylesheet for Flywheel chess demo.
+*/
+
+body {
+    width: 800px;
+}
+
 .RankFileText {
     font-family: monospace;
     font-size: 14px;

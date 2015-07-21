@@ -74,7 +74,7 @@ var FwDemo;
     }
     function InitBoardDisplay() {
         var x, y;
-        var html = '';
+        var html = '<div id="RotateButton" style="position:absolute; width:64px; height:64px; top:0px; left:600px;" title="Rotate board"><img src="../icon/loop-circular-8x.png" width="64" height="64" alt="Rotate board"></div>';
         for (y = 0; y < 8; ++y) {
             for (x = 0; x < 8; ++x) {
                 html += MakeImageContainer(x, y);
@@ -101,9 +101,16 @@ var FwDemo;
             }
         }
     }
+    function InitControls() {
+        $('#RotateButton').click(function () {
+            RotateFlag = !RotateFlag;
+            DrawBoard(TheBoard);
+        });
+    }
     function InitPage() {
         InitBoardDisplay();
         DrawBoard(TheBoard);
+        InitControls();
     }
     FwDemo.InitPage = InitPage;
 })(FwDemo || (FwDemo = {}));
