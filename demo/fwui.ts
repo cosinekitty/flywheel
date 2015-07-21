@@ -4,8 +4,8 @@ module FwDemo {
     var SquarePixels:number = 70;
     var TheBoard:Flywheel.Board = new Flywheel.Board();
     var RotateFlag:boolean = false;
-    var BgDark = '#808080';
-    var BgPale = '#a0b0c0';
+    var BgDark = '#8FA679';
+    var BgPale = '#D4CEA3';
 
     function MakeImageHtml(s:Flywheel.Square):string {
         let fn:string;

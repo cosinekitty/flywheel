@@ -4,8 +4,8 @@ var FwDemo;
     var SquarePixels = 70;
     var TheBoard = new Flywheel.Board();
     var RotateFlag = false;
-    var BgDark = '#808080';
-    var BgPale = '#a0b0c0';
+    var BgDark = '#8FA679';
+    var BgPale = '#D4CEA3';
     function MakeImageHtml(s) {
         var fn;
         switch (s) {
