@@ -58,7 +58,7 @@ module FwDemo {
 
     function InitBoardDisplay():void {
         var x, y;
-        let html = '<div id="RotateButton" style="position:absolute; width:64px; height:64px; top:3px; left:590px;" title="Rotate board"><img class="ShadowFilter" src="../icon/loop-circular-8x.png" width="64" height="64" alt="Rotate board"></div>';
+        let html = '<img id="RotateButton" class="ShadowFilter" src="../icon/loop-circular-8x.png" width="64" height="64" alt="Rotate board" style="position:absolute; width:64px; height:64px; top:3px; left:590px;" title="Rotate board">';
         for (y=0; y < 8; ++y) {
             for (x=0; x < 8; ++x) {
                 html += MakeImageContainer(x, y);
@@ -88,9 +88,17 @@ module FwDemo {
     }
 
     function InitControls() {
-        $('#RotateButton').click(function(){
+        var rotateButton = $('#RotateButton');
+
+        rotateButton.click(function(){
             RotateFlag = !RotateFlag;
             DrawBoard(TheBoard);
+        }).hover(function(){
+            // hover in
+            rotateButton.prop('class', 'ShadowFilterHover');
+        }, function(){
+            // hover out
+            rotateButton.prop('class', 'ShadowFilter');
         });
     }
 
