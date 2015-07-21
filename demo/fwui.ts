@@ -32,6 +32,19 @@ module FwDemo {
         return '<img src="' + fn + '" width="' + SquarePixels + '" height="' + SquarePixels + '"/>';
     }
 
+    function MakeFileLabel(x:number): string {
+        return '<div class="RankFileText" id="FileLabel_' + x.toFixed() + '"' +
+            ' style="position: absolute; top: ' + (SquarePixels*8 + 8).toFixed() + 'px; ' +
+            ' left: ' + (SquarePixels*x + (SquarePixels >> 1) - 4).toFixed() + 'px; ">x</div>';
+    }
+
+    function MakeRankLabel(y:number): string {
+        return '<div class="RankFileText" id="RankLabel_' + y.toFixed() + '"' +
+            ' style="position: absolute; left:-20px; top:' +
+            (SquarePixels*y + (SquarePixels >> 1) - 7).toFixed() + 'px;' +
+            '">y</div>';
+    }
+
     function MakeImageContainer(x:number, y:number) {
         return '<div id="Square_' + x.toString() + y.toString() + '"' +
             ' style="position:absolute; left:' +
@@ -51,12 +64,20 @@ module FwDemo {
                 html += MakeImageContainer(x, y);
             }
         }
+        for (x=0; x < 8; ++x) {
+            html += MakeFileLabel(x);
+        }
+        for (x=0; x < 8; ++x) {
+            html += MakeRankLabel(x);
+        }
         $('#DivBoard').html(html);
     }
 
     function DrawBoard(board:Flywheel.Board):void {
         for (let y=0; y < 8; ++y) {
             let ry = RotateFlag ? (7 - y) : y;
+            $('#RankLabel_' + ry.toFixed()).text('87654321'.charAt(y));
+            $('#FileLabel_' + ry.toFixed()).text('abcdefgh'.charAt(y));
             for (let x=0; x < 8; ++x) {
                 let rx = RotateFlag ? (7 - x) : x;
                 let sq:Flywheel.Square = board.GetSquareByCoords(x, y);
