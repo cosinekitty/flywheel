@@ -314,6 +314,27 @@ bool ScanInteger(const char *text, int& value, const char *name)
     return false;
 }
 
+Pixel MixPixels(const Pixel& blur, const Pixel& orig, double shadowAlpha)
+{
+    double blurAlpha = shadowAlpha * blur.alpha;
+    double alpha = 1.0 - (1.0 - orig.alpha)*(1.0 - blurAlpha);
+
+    // Special case: avoid division by zero.
+    // If alpha is very close to 0, it means the resulting pixel is transparent,
+    // so RGB values don't matter anyway.  Just return a pure black and completely transparent pixel.
+    if (fabs(alpha) < 1.0e-5)
+    {
+        return Pixel();
+    }
+
+    return Pixel (
+        (orig.alpha*orig.red   + (1.0 - orig.alpha)*(blurAlpha*blur.red  )) / alpha,
+        (orig.alpha*orig.blue  + (1.0 - orig.alpha)*(blurAlpha*blur.blue )) / alpha,
+        (orig.alpha*orig.green + (1.0 - orig.alpha)*(blurAlpha*blur.green)) / alpha,
+        alpha
+    );
+}
+
 bool Transform(
     const ImageVector& inputImage,
     unsigned inputWidth,
@@ -363,15 +384,30 @@ bool Transform(
         }
     }
 
-#if 1
-    outputWidth = blurWidth;
-    outputHeight = blurHeight;
-    outputImage = blurred.MakeOutputVector();
-#else
     // Create the output image by mixing the original image and the blurred image.
+    const double shadowAlpha = MathFromByte(parms.alpha);
     ImageBuffer output(outputWidth, outputHeight);
-    outputImage = output.MakeOutputVector();
-#endif
+    const int oh = static_cast<int>(outputHeight);
+    const int ow = static_cast<int>(outputWidth);
+    for (int oy=0; oy < oh; ++oy)
+    {
+        int by = oy;
+        int iy = oy - belt;
+        if (parms.dy >= 0) { by -= parms.dy; } else { iy += parms.dy; }
 
+        for (int ox=0; ox < ow; ++ox)
+        {
+            int bx = ox;
+            int ix = ox - belt;
+            if (parms.dx >= 0) { bx -= parms.dx; } else { ix += parms.dx; }
+
+            Pixel bp = blurred.GetPixel(bx, by);
+            Pixel op = original.GetPixel(ix, iy);
+            Pixel mp = MixPixels(bp, op, shadowAlpha);
+            output.SetPixel(ox, oy, mp);
+        }
+    }
+
+    outputImage = output.MakeOutputVector();
     return true;
 }
