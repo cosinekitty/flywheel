@@ -1,0 +1,20 @@
+#!/bin/bash
+# 
+#   I did not want to check in Lode Vandevenne's work into my own repository,
+#   just my own work.  So first this will download lodepng source code if needed.
+#
+
+for SRC in lodepng.cpp lodepng.h; do
+    if [ ! -f $SRC ]; then
+        curl -o $SRC https://raw.githubusercontent.com/lvandeve/lodepng/master/$SRC
+    fi
+done
+
+#
+#   Build pgnblur.
+#
+
+g++ -g -std=c++11 \
+    -Wall -Wextra -Wshadow -Wnon-virtual-dtor -Wunused -Woverloaded-virtual \
+    -O0 -o pngblur \
+    lodepng.cpp pngblur.cpp
