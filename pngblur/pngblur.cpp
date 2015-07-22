@@ -220,11 +220,13 @@ public:
             for (int dy = 1-dimension; dy < dimension; ++dy)
             {
                 double z = Factor(dx, dy);
-                Pixel pa = image.GetPixel(ix+dx, iy+dy);
-                psum.red   += z * pa.red;
-                psum.green += z * pa.green;
-                psum.blue  += z * pa.blue;
-                psum.alpha += z * pa.alpha;
+
+                // The only part of each input pixel that affects the shadow is the alpha value.
+                // The more opaque the input pixel is, the more intense the shadow.
+                psum.red   += z;
+                psum.green += z;
+                psum.blue  += z;
+                psum.alpha += z * image.GetPixel(ix+dx, iy+dy).alpha;
             }
         }
         return psum;
@@ -329,8 +331,8 @@ Pixel MixPixels(const Pixel& blur, const Pixel& orig, double shadowAlpha)
 
     return Pixel (
         (orig.alpha*orig.red   + (1.0 - orig.alpha)*(blurAlpha*blur.red  )) / alpha,
-        (orig.alpha*orig.blue  + (1.0 - orig.alpha)*(blurAlpha*blur.blue )) / alpha,
         (orig.alpha*orig.green + (1.0 - orig.alpha)*(blurAlpha*blur.green)) / alpha,
+        (orig.alpha*orig.blue  + (1.0 - orig.alpha)*(blurAlpha*blur.blue )) / alpha,
         alpha
     );
 }
@@ -375,11 +377,17 @@ bool Transform(
 
     // Create a blurred image with extra space around the sides.
     ImageBuffer blurred(blurWidth, blurHeight);
+    const double sr = MathFromByte(parms.red);
+    const double sg = MathFromByte(parms.green);
+    const double sb = MathFromByte(parms.blue);
     for (int y=0; y < blurHeight; ++y)
     {
         for (int x=0; x < blurWidth; ++x)
         {
             Pixel p = conv.Convolve(original, x-belt, y-belt);
+            p.red   *= sr;
+            p.green *= sg;
+            p.blue  *= sb;
             blurred.SetPixel(x, y, p);
         }
     }

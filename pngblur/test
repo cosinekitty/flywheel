@@ -1,11 +1,3 @@
 #!/bin/bash
-DX=6
-DY=4
-RADIUS=5
-RED=100
-GREEN=5
-BLUE=200
-ALPHA=100
-COMMAND="./pngblur ../icon/loop-circular-8x.png test.png  $DX $DY  $RADIUS  $RED $GREEN $BLUE  $ALPHA"
-echo $COMMAND
-$COMMAND
+./pngblur ../icon/loop-circular-8x.png test1.png 6 4 5    0   5   0  100
+./pngblur ../icon/loop-circular-8x.png test2.png 6 4 5  100   5  20  100
