@@ -150,6 +150,54 @@ public:
 
         return output;
     }
+
+    ImageBuffer Crop() const
+    {
+        // Find crop boundary.
+        // Look for min x, max x, min y, max y where there is a nonzero alpha value.
+        int x1 = width - 1;
+        int x2 = 0;
+        int y1 = height - 1;
+        int y2 = 0;
+
+        int offset = 0;
+        for (int y=0; y < height; ++y)
+        {
+            for (int x=0; x < width; ++x)
+            {
+                if (fabs(pixel[offset++].alpha) >= 0.01)
+                {
+                    if (x < x1) x1 = x;
+                    if (x > x2) x2 = x;
+                    if (y < y1) y1 = y;
+                    if (y > y2) y2 = y;
+                }
+            }
+        }
+
+        if (x1 > x2 || y1 > y2)
+        {
+            throw "Could not crop image - might be empty?";
+        }
+
+        int cw = x2 - x1 + 1;
+        int ch = y2 - y1 + 1;
+
+        std::cout << "Cropped " << width << "x" << height <<
+            " to " << cw << "x" << ch <<
+            " (x1=" << x1 << " y1=" << y1 << " x2=" << x2 << " y2=" << y2 << ")" << std::endl;
+
+        ImageBuffer crop(cw, ch);
+        for (int y=0; y < ch; ++y)
+        {
+            for (int x=0; x < cw; ++x)
+            {
+                crop.SetPixel(x, y, GetPixel(x+x1, y+y1));
+            }
+        }
+
+        return crop;
+    }
 };
 
 class ConvolutionBuffer
@@ -416,6 +464,13 @@ bool Transform(
         }
     }
 
-    outputImage = output.MakeOutputVector();
+    // Automatically crop the output to the smallest rectangle that contains
+    // all pixels with a (significantly) nonzero alpha value.
+    ImageBuffer cropped = output.Crop();
+
+    outputImage  = cropped.MakeOutputVector();
+    outputWidth  = cropped.Width();
+    outputHeight = cropped.Height();
+
     return true;
 }
