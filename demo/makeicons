@@ -1,0 +1,6 @@
+#!/bin/bash
+
+for ICON in loop-circular-8x.png; do
+    ../pngblur/pngblur ../icon/$ICON shadow1/$ICON 6 4 5    0   5   0  100
+    ../pngblur/pngblur ../icon/$ICON shadow2/$ICON 6 4 5  100   5  20  100
+done

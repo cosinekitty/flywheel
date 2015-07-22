@@ -58,7 +58,7 @@ module FwDemo {
 
     function InitBoardDisplay():void {
         var x, y;
-        let html = '<img id="RotateButton" class="ShadowFilter" src="../icon/loop-circular-8x.png" width="64" height="64" alt="Rotate board" style="position:absolute; width:64px; height:64px; top:3px; left:590px;" title="Rotate board">';
+        let html = '<img id="RotateButton" src="shadow1/loop-circular-8x.png" alt="Rotate board" style="position:absolute; width:76px; height:64px; top:3px; left:590px;" title="Rotate board">';
         for (y=0; y < 8; ++y) {
             for (x=0; x < 8; ++x) {
                 html += MakeImageContainer(x, y);
@@ -95,10 +95,10 @@ module FwDemo {
             DrawBoard(TheBoard);
         }).hover(function(){
             // hover in
-            rotateButton.prop('class', 'ShadowFilterHover');
+            rotateButton.prop('src', 'shadow2/loop-circular-8x.png');
         }, function(){
             // hover out
-            rotateButton.prop('class', 'ShadowFilter');
+            rotateButton.prop('src', 'shadow1/loop-circular-8x.png');
         });
     }
 

@@ -12,9 +12,10 @@ done
 
 #
 #   Build pgnblur.
+#   For debugging, change -O2 to -O0 and add -g.
 #
 
-g++ -g -std=c++11 \
+g++ -std=c++11 \
     -Wall -Wextra -Wshadow -Wnon-virtual-dtor -Wunused -Woverloaded-virtual \
-    -O0 -o pngblur \
+    -O2 -o pngblur \
     lodepng.cpp pngblur.cpp

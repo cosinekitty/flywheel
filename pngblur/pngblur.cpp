@@ -183,9 +183,11 @@ public:
         int cw = x2 - x1 + 1;
         int ch = y2 - y1 + 1;
 
+#if 0
         std::cout << "Cropped " << width << "x" << height <<
             " to " << cw << "x" << ch <<
             " (x1=" << x1 << " y1=" << y1 << " x2=" << x2 << " y2=" << y2 << ")" << std::endl;
+#endif
 
         ImageBuffer crop(cw, ch);
         for (int y=0; y < ch; ++y)
