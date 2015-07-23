@@ -65,6 +65,7 @@ var FwDemo;
     }
     function MakeImageContainer(x, y) {
         return '<div id="Square_' + x.toString() + y.toString() + '"' +
+            ' class="ChessSquare"' +
             ' style="position:absolute; left:' +
             (SquarePixels * x).toFixed() + 'px; top:' +
             (SquarePixels * (7 - y)).toFixed() + 'px;' +
@@ -89,6 +90,24 @@ var FwDemo;
         }
         $('#DivBoard').html(html);
     }
+    function AlgCoords(alg) {
+        var chessX = 'abcdefgh'.indexOf(alg.charAt(0));
+        var chessY = '12345678'.indexOf(alg.charAt(1));
+        var screenX = RotateFlag ? (7 - chessX) : chessX;
+        var screenY = RotateFlag ? (7 - chessY) : chessY;
+        return {
+            chessX: chessX,
+            chessY: chessY,
+            screenX: screenX,
+            screenY: screenY,
+            selector: '#Square_' + screenX.toFixed() + screenY.toFixed()
+        };
+    }
+    function MoveCoords(move) {
+        var sourceAlg = Flywheel.Board.Algebraic(move.source);
+        var destAlg = Flywheel.Board.Algebraic(move.dest);
+        return { source: AlgCoords(sourceAlg), dest: AlgCoords(destAlg) };
+    }
     function DrawBoard(board) {
         for (var y = 0; y < 8; ++y) {
             var ry = RotateFlag ? (7 - y) : y;
@@ -98,7 +117,18 @@ var FwDemo;
                 var rx = RotateFlag ? (7 - x) : x;
                 var sq = board.GetSquareByCoords(x, y);
                 var img = MakeImageHtml(sq);
-                $('#Square_' + rx.toString() + ry.toString()).html(img);
+                var sdiv = $('#Square_' + rx.toString() + ry.toString());
+                sdiv.html(img);
+            }
+        }
+        $('.ChessSquare').removeClass('UserCanSelect');
+        if (UserCanMove) {
+            // Mark all squares that contain a piece the user can move with 'UserCanSelect' class.
+            var legal = board.LegalMoves();
+            for (var _i = 0; _i < legal.length; _i++) {
+                var move = legal[_i];
+                var coords = MoveCoords(move);
+                $(coords.source.selector).addClass('UserCanSelect');
             }
         }
     }
@@ -120,7 +150,7 @@ var FwDemo;
         };
     };
     function OnSquareHoverIn() {
-        if (UserCanMove) {
+        if (UserCanMove && $(this).hasClass('UserCanSelect')) {
             $(this).addClass('ChessSquareHover');
         }
     }

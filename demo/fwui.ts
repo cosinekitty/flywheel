@@ -48,6 +48,7 @@ module FwDemo {
 
     function MakeImageContainer(x:number, y:number) {
         return '<div id="Square_' + x.toString() + y.toString() + '"' +
+            ' class="ChessSquare"' +
             ' style="position:absolute; left:' +
             (SquarePixels * x).toFixed() + 'px; top:' +
             (SquarePixels * (7 - y)).toFixed() + 'px;' +
@@ -74,6 +75,27 @@ module FwDemo {
         $('#DivBoard').html(html);
     }
 
+    function AlgCoords(alg:string) {
+        let chessX = 'abcdefgh'.indexOf(alg.charAt(0));
+        let chessY = '12345678'.indexOf(alg.charAt(1));
+        let screenX = RotateFlag ? (7-chessX) : chessX;
+        let screenY = RotateFlag ? (7-chessY) : chessY;
+
+        return {
+            chessX: chessX,
+            chessY: chessY,
+            screenX: screenX,
+            screenY: screenY,
+            selector: '#Square_' + screenX.toFixed() + screenY.toFixed()
+        };
+    }
+
+    function MoveCoords(move:Flywheel.Move) {
+        let sourceAlg = Flywheel.Board.Algebraic(move.source);
+        let destAlg   = Flywheel.Board.Algebraic(move.dest);
+        return { source:AlgCoords(sourceAlg), dest:AlgCoords(destAlg) };
+    }
+
     function DrawBoard(board:Flywheel.Board):void {
         for (let y=0; y < 8; ++y) {
             let ry = RotateFlag ? (7 - y) : y;
@@ -83,7 +105,18 @@ module FwDemo {
                 let rx = RotateFlag ? (7 - x) : x;
                 let sq:Flywheel.Square = board.GetSquareByCoords(x, y);
                 let img:string = MakeImageHtml(sq);
-                $('#Square_' + rx.toString() + ry.toString()).html(img);
+                let sdiv = $('#Square_' + rx.toString() + ry.toString());
+                sdiv.html(img);
+            }
+        }
+
+        $('.ChessSquare').removeClass('UserCanSelect');
+        if (UserCanMove) {
+            // Mark all squares that contain a piece the user can move with 'UserCanSelect' class.
+            let legal:Flywheel.Move[] = board.LegalMoves();
+            for (let move of legal) {
+                let coords = MoveCoords(move);
+                $(coords.source.selector).addClass('UserCanSelect');
             }
         }
     }
@@ -111,7 +144,7 @@ module FwDemo {
     }
 
     function OnSquareHoverIn() {
-        if (UserCanMove) {
+        if (UserCanMove && $(this).hasClass('UserCanSelect')) {
             $(this).addClass('ChessSquareHover');
         }
     }
