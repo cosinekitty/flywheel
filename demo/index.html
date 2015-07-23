@@ -4,8 +4,8 @@
     <title>Flywheel chess program</title>
     <link rel="stylesheet" href="demo.css">
 </head>
-<body>
-    <div id="DivBoard" class="ChessBoard"></div>
+<body ondragstart="return false;" ondrop="return false;">
+    <div id="DivBoard" class="ChessBoard noselect"></div>
 
     <script src="//code.jquery.com/jquery-2.1.4.min.js"></script>
     <script src="../src/flywheel.js"></script>

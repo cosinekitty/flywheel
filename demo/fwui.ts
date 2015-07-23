@@ -4,6 +4,7 @@ module FwDemo {
     var SquarePixels:number = 70;
     var TheBoard:Flywheel.Board = new Flywheel.Board();
     var RotateFlag:boolean = false;
+    var UserCanMove:boolean = true;
     var BgDark = '#8FA679';
     var BgPale = '#D4CEA3';
 
@@ -87,9 +88,57 @@ module FwDemo {
         }
     }
 
-    function InitControls() {
-        var rotateButton = $('#RotateButton');
+    let BoardCoords = function(e) {
+        let divOfs = $('#DivBoard').offset();
+        let screenX:number = Math.floor((e.pageX - divOfs.left) / SquarePixels);
+        let screenY:number = Math.floor(8.0 - ((e.pageY - divOfs.top)  / SquarePixels));
+        let chessX:number = RotateFlag ? (7-screenX) : screenX;
+        let chessY:number = RotateFlag ? (7-screenY) : screenY;
 
+        if (chessX < 0 || chessX > 7 || chessY < 0 || chessY > 7) {
+            return null;    // outside the board
+        }
+
+        return {
+            screenX: screenX,   // cartesian square coordinates as seen on the screen
+            screenY: screenY,
+
+            chessX: chessX,     // chess board coordinates from White's point of view (includes rotation)
+            chessY: chessY,
+
+            selector: '#Square_' + screenX.toFixed() + screenY.toFixed()
+        };
+    }
+
+    function OnSquareHoverIn() {
+        if (UserCanMove) {
+            $(this).addClass('ChessSquareHover');
+        }
+    }
+
+    function OnSquareHoverOut() {
+        $(this).removeClass('ChessSquareHover');
+    }
+
+    function InitControls() {
+        var boardDiv = $('#DivBoard');
+        boardDiv.mousedown(function(e){
+            if (e.which === 1) {    // left (primary) mouse button
+                let bc = BoardCoords(e);
+                if (bc) {
+                    //$(bc.selector).addClass('ChessSquareShadow');
+                }
+            }
+        });
+
+        for (let x=0; x < 8; ++x) {
+            for (let y=0; y < 8; ++y) {
+                let sq = $('#Square_' + x.toFixed() + y.toFixed());
+                sq.hover(OnSquareHoverIn, OnSquareHoverOut);
+            }
+        }
+
+        var rotateButton = $('#RotateButton');
         rotateButton.click(function(){
             RotateFlag = !RotateFlag;
             DrawBoard(TheBoard);

@@ -4,6 +4,7 @@ var FwDemo;
     var SquarePixels = 70;
     var TheBoard = new Flywheel.Board();
     var RotateFlag = false;
+    var UserCanMove = true;
     var BgDark = '#8FA679';
     var BgPale = '#D4CEA3';
     function MakeImageHtml(s) {
@@ -101,7 +102,46 @@ var FwDemo;
             }
         }
     }
+    var BoardCoords = function (e) {
+        var divOfs = $('#DivBoard').offset();
+        var screenX = Math.floor((e.pageX - divOfs.left) / SquarePixels);
+        var screenY = Math.floor(8.0 - ((e.pageY - divOfs.top) / SquarePixels));
+        var chessX = RotateFlag ? (7 - screenX) : screenX;
+        var chessY = RotateFlag ? (7 - screenY) : screenY;
+        if (chessX < 0 || chessX > 7 || chessY < 0 || chessY > 7) {
+            return null; // outside the board
+        }
+        return {
+            screenX: screenX,
+            screenY: screenY,
+            chessX: chessX,
+            chessY: chessY,
+            selector: '#Square_' + screenX.toFixed() + screenY.toFixed()
+        };
+    };
+    function OnSquareHoverIn() {
+        if (UserCanMove) {
+            $(this).addClass('ChessSquareHover');
+        }
+    }
+    function OnSquareHoverOut() {
+        $(this).removeClass('ChessSquareHover');
+    }
     function InitControls() {
+        var boardDiv = $('#DivBoard');
+        boardDiv.mousedown(function (e) {
+            if (e.which === 1) {
+                var bc = BoardCoords(e);
+                if (bc) {
+                }
+            }
+        });
+        for (var x = 0; x < 8; ++x) {
+            for (var y = 0; y < 8; ++y) {
+                var sq = $('#Square_' + x.toFixed() + y.toFixed());
+                sq.hover(OnSquareHoverIn, OnSquareHoverOut);
+            }
+        }
         var rotateButton = $('#RotateButton');
         rotateButton.click(function () {
             RotateFlag = !RotateFlag;
