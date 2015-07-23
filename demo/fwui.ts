@@ -29,7 +29,7 @@ module FwDemo {
         }
 
         fn = '../pieces/merida/png/' + fn + '.png';
-        return '<img src="' + fn + '" width="' + SquarePixels + '" height="' + SquarePixels + '"/>';
+        return '<img src="' + fn + '" width="' + SquarePixels + '" height="' + SquarePixels + '">';
     }
 
     function MakeFileLabel(x:number): string {

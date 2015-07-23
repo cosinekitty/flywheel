@@ -49,7 +49,7 @@ var FwDemo;
                 return '';
         }
         fn = '../pieces/merida/png/' + fn + '.png';
-        return '<img src="' + fn + '" width="' + SquarePixels + '" height="' + SquarePixels + '"/>';
+        return '<img src="' + fn + '" width="' + SquarePixels + '" height="' + SquarePixels + '">';
     }
     function MakeFileLabel(x) {
         return '<div class="RankFileText" id="FileLabel_' + x.toFixed() + '"' +
