@@ -1,10 +1,19 @@
 /// <reference path="../src/flywheel.ts"/>
 
 module FwDemo {
+    enum MoveStateType {
+        OpponentTurn,   // not user's turn (computer's turn)
+        SelectSource,
+        SelectDest,
+        GameOver
+        // may need another state for promotion
+    };
+
     var SquarePixels:number = 70;
     var TheBoard:Flywheel.Board = new Flywheel.Board();
     var RotateFlag:boolean = false;
-    var UserCanMove:boolean = true;
+    var MoveState:MoveStateType = MoveStateType.SelectSource;
+    var SourceSquareSelector:string = null;
     var BgDark = '#8FA679';
     var BgPale = '#D4CEA3';
 
@@ -82,6 +91,7 @@ module FwDemo {
         let screenY = RotateFlag ? (7-chessY) : chessY;
 
         return {
+            alg: alg,
             chessX: chessX,
             chessY: chessY,
             screenX: screenX,
@@ -96,6 +106,26 @@ module FwDemo {
         return { source:AlgCoords(sourceAlg), dest:AlgCoords(destAlg) };
     }
 
+    function SetMoveState(state:MoveStateType) {
+        MoveState = state;
+
+        // Make all squares unselectable.
+        $('.ChessSquare').removeClass('UserCanSelect');
+        let legal:Flywheel.Move[] = TheBoard.LegalMoves();
+        if (state === MoveStateType.SelectSource) {
+            // Mark all squares that contain a piece the user can move with 'UserCanSelect' class.
+            for (let move of legal) {
+                let coords = MoveCoords(move);
+                $(coords.source.selector).addClass('UserCanSelect');
+            }
+        } else if (state == MoveStateType.SelectDest) {
+            for (let move of legal) {
+                let coords = MoveCoords(move);
+                $(coords.dest.selector).addClass('UserCanSelect');
+            }
+        }
+    }
+
     function DrawBoard(board:Flywheel.Board):void {
         for (let y=0; y < 8; ++y) {
             let ry = RotateFlag ? (7 - y) : y;
@@ -107,16 +137,6 @@ module FwDemo {
                 let img:string = MakeImageHtml(sq);
                 let sdiv = $('#Square_' + rx.toString() + ry.toString());
                 sdiv.html(img);
-            }
-        }
-
-        $('.ChessSquare').removeClass('UserCanSelect');
-        if (UserCanMove) {
-            // Mark all squares that contain a piece the user can move with 'UserCanSelect' class.
-            let legal:Flywheel.Move[] = board.LegalMoves();
-            for (let move of legal) {
-                let coords = MoveCoords(move);
-                $(coords.source.selector).addClass('UserCanSelect');
             }
         }
     }
@@ -144,13 +164,53 @@ module FwDemo {
     }
 
     function OnSquareHoverIn() {
-        if (UserCanMove && $(this).hasClass('UserCanSelect')) {
+        if ($(this).hasClass('UserCanSelect')) {
             $(this).addClass('ChessSquareHover');
         }
     }
 
     function OnSquareHoverOut() {
         $(this).removeClass('ChessSquareHover');
+    }
+
+    function OnSquareClicked(e) {
+        if (e.which === 1) {        // primary mouse button
+            let bc = BoardCoords(e);
+            if (bc) {
+                if (MoveState === MoveStateType.SelectSource) {
+                    if ($(this).hasClass('UserCanSelect')) {
+                        // Are we selecting source square or destination square?
+                        SourceSquareSelector = '#' + this.id;
+                        SetMoveState(MoveStateType.SelectDest);
+                    }
+                } else if (MoveState === MoveStateType.SelectDest) {
+                    // Find matching (source,dest) pair in legal move list, make move on board, redraw board.
+                    let legal:Flywheel.Move[] = TheBoard.LegalMoves();
+                    let chosenMove:Flywheel.Move = null;
+                    for (let move of legal) {
+                        let coords = MoveCoords(move);
+                        if (coords.dest.selector === '#' + this.id) {
+                            if (coords.source.selector === SourceSquareSelector) {
+                                // !!! FIXFIXFIX - check for pawn promotion, prompt for promotion piece
+                                chosenMove = move;
+                            }
+                        }
+                    }
+
+                    if (chosenMove) {
+                        TheBoard.PushMove(chosenMove);
+                        DrawBoard(TheBoard);
+                        SetMoveState(MoveStateType.SelectSource);
+                    } else {
+                        // FIXFIXFIX - check for computer opponent
+                        SetMoveState(MoveStateType.SelectSource);
+                    }
+
+                } else {
+                    throw 'Invalid move state: ' + MoveStateType[MoveState];
+                }
+            }
+        }
     }
 
     function InitControls() {
@@ -167,7 +227,7 @@ module FwDemo {
         for (let x=0; x < 8; ++x) {
             for (let y=0; y < 8; ++y) {
                 let sq = $('#Square_' + x.toFixed() + y.toFixed());
-                sq.hover(OnSquareHoverIn, OnSquareHoverOut);
+                sq.hover(OnSquareHoverIn, OnSquareHoverOut).click(OnSquareClicked);
             }
         }
 
@@ -175,6 +235,7 @@ module FwDemo {
         rotateButton.click(function(){
             RotateFlag = !RotateFlag;
             DrawBoard(TheBoard);
+            SetMoveState(MoveState);    // refresh clickable squares
         }).hover(function(){
             // hover in
             rotateButton.prop('src', 'shadow2/loop-circular-8x.png');
@@ -188,6 +249,7 @@ module FwDemo {
         InitBoardDisplay();
         DrawBoard(TheBoard);
         InitControls();
+        SetMoveState(MoveStateType.SelectSource);
     }
 }
 

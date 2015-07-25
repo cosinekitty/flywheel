@@ -1,10 +1,19 @@
 /// <reference path="../src/flywheel.ts"/>
 var FwDemo;
 (function (FwDemo) {
+    var MoveStateType;
+    (function (MoveStateType) {
+        MoveStateType[MoveStateType["OpponentTurn"] = 0] = "OpponentTurn";
+        MoveStateType[MoveStateType["SelectSource"] = 1] = "SelectSource";
+        MoveStateType[MoveStateType["SelectDest"] = 2] = "SelectDest";
+        MoveStateType[MoveStateType["GameOver"] = 3] = "GameOver";
+    })(MoveStateType || (MoveStateType = {}));
+    ;
     var SquarePixels = 70;
     var TheBoard = new Flywheel.Board();
     var RotateFlag = false;
-    var UserCanMove = true;
+    var MoveState = MoveStateType.SelectSource;
+    var SourceSquareSelector = null;
     var BgDark = '#8FA679';
     var BgPale = '#D4CEA3';
     function MakeImageHtml(s) {
@@ -96,6 +105,7 @@ var FwDemo;
         var screenX = RotateFlag ? (7 - chessX) : chessX;
         var screenY = RotateFlag ? (7 - chessY) : chessY;
         return {
+            alg: alg,
             chessX: chessX,
             chessY: chessY,
             screenX: screenX,
@@ -108,6 +118,27 @@ var FwDemo;
         var destAlg = Flywheel.Board.Algebraic(move.dest);
         return { source: AlgCoords(sourceAlg), dest: AlgCoords(destAlg) };
     }
+    function SetMoveState(state) {
+        MoveState = state;
+        // Make all squares unselectable.
+        $('.ChessSquare').removeClass('UserCanSelect');
+        var legal = TheBoard.LegalMoves();
+        if (state === MoveStateType.SelectSource) {
+            // Mark all squares that contain a piece the user can move with 'UserCanSelect' class.
+            for (var _i = 0; _i < legal.length; _i++) {
+                var move = legal[_i];
+                var coords = MoveCoords(move);
+                $(coords.source.selector).addClass('UserCanSelect');
+            }
+        }
+        else if (state == MoveStateType.SelectDest) {
+            for (var _a = 0; _a < legal.length; _a++) {
+                var move = legal[_a];
+                var coords = MoveCoords(move);
+                $(coords.dest.selector).addClass('UserCanSelect');
+            }
+        }
+    }
     function DrawBoard(board) {
         for (var y = 0; y < 8; ++y) {
             var ry = RotateFlag ? (7 - y) : y;
@@ -119,16 +150,6 @@ var FwDemo;
                 var img = MakeImageHtml(sq);
                 var sdiv = $('#Square_' + rx.toString() + ry.toString());
                 sdiv.html(img);
-            }
-        }
-        $('.ChessSquare').removeClass('UserCanSelect');
-        if (UserCanMove) {
-            // Mark all squares that contain a piece the user can move with 'UserCanSelect' class.
-            var legal = board.LegalMoves();
-            for (var _i = 0; _i < legal.length; _i++) {
-                var move = legal[_i];
-                var coords = MoveCoords(move);
-                $(coords.source.selector).addClass('UserCanSelect');
             }
         }
     }
@@ -150,12 +171,53 @@ var FwDemo;
         };
     };
     function OnSquareHoverIn() {
-        if (UserCanMove && $(this).hasClass('UserCanSelect')) {
+        if ($(this).hasClass('UserCanSelect')) {
             $(this).addClass('ChessSquareHover');
         }
     }
     function OnSquareHoverOut() {
         $(this).removeClass('ChessSquareHover');
+    }
+    function OnSquareClicked(e) {
+        if (e.which === 1) {
+            var bc = BoardCoords(e);
+            if (bc) {
+                if (MoveState === MoveStateType.SelectSource) {
+                    if ($(this).hasClass('UserCanSelect')) {
+                        // Are we selecting source square or destination square?
+                        SourceSquareSelector = '#' + this.id;
+                        SetMoveState(MoveStateType.SelectDest);
+                    }
+                }
+                else if (MoveState === MoveStateType.SelectDest) {
+                    // Find matching (source,dest) pair in legal move list, make move on board, redraw board.
+                    var legal = TheBoard.LegalMoves();
+                    var chosenMove = null;
+                    for (var _i = 0; _i < legal.length; _i++) {
+                        var move = legal[_i];
+                        var coords = MoveCoords(move);
+                        if (coords.dest.selector === '#' + this.id) {
+                            if (coords.source.selector === SourceSquareSelector) {
+                                // !!! FIXFIXFIX - check for pawn promotion, prompt for promotion piece
+                                chosenMove = move;
+                            }
+                        }
+                    }
+                    if (chosenMove) {
+                        TheBoard.PushMove(chosenMove);
+                        DrawBoard(TheBoard);
+                        SetMoveState(MoveStateType.SelectSource);
+                    }
+                    else {
+                        // FIXFIXFIX - check for computer opponent
+                        SetMoveState(MoveStateType.SelectSource);
+                    }
+                }
+                else {
+                    throw 'Invalid move state: ' + MoveStateType[MoveState];
+                }
+            }
+        }
     }
     function InitControls() {
         var boardDiv = $('#DivBoard');
@@ -169,13 +231,14 @@ var FwDemo;
         for (var x = 0; x < 8; ++x) {
             for (var y = 0; y < 8; ++y) {
                 var sq = $('#Square_' + x.toFixed() + y.toFixed());
-                sq.hover(OnSquareHoverIn, OnSquareHoverOut);
+                sq.hover(OnSquareHoverIn, OnSquareHoverOut).click(OnSquareClicked);
             }
         }
         var rotateButton = $('#RotateButton');
         rotateButton.click(function () {
             RotateFlag = !RotateFlag;
             DrawBoard(TheBoard);
+            SetMoveState(MoveState); // refresh clickable squares
         }).hover(function () {
             // hover in
             rotateButton.prop('src', 'shadow2/loop-circular-8x.png');
@@ -188,6 +251,7 @@ var FwDemo;
         InitBoardDisplay();
         DrawBoard(TheBoard);
         InitControls();
+        SetMoveState(MoveStateType.SelectSource);
     }
     FwDemo.InitPage = InitPage;
 })(FwDemo || (FwDemo = {}));
