@@ -206,15 +206,22 @@ var FwDemo;
                     if (chosenMove) {
                         TheBoard.PushMove(chosenMove);
                         DrawBoard(TheBoard);
-                        SetMoveState(MoveStateType.SelectSource);
+                        var result = TheBoard.GetGameResult();
+                        if (result.status === Flywheel.GameStatus.InProgress) {
+                            // FIXFIXFIX - check for computer opponent
+                            SetMoveState(MoveStateType.SelectSource);
+                        }
+                        else {
+                            // Game is over!
+                            SetMoveState(MoveStateType.GameOver);
+                        }
                     }
                     else {
-                        // FIXFIXFIX - check for computer opponent
+                        // Not a valid move, so cancel the current move and start over.
                         SetMoveState(MoveStateType.SelectSource);
                     }
                 }
                 else {
-                    throw 'Invalid move state: ' + MoveStateType[MoveState];
                 }
             }
         }

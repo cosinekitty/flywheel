@@ -200,14 +200,21 @@ module FwDemo {
                     if (chosenMove) {
                         TheBoard.PushMove(chosenMove);
                         DrawBoard(TheBoard);
-                        SetMoveState(MoveStateType.SelectSource);
+                        let result = TheBoard.GetGameResult();
+                        if (result.status === Flywheel.GameStatus.InProgress) {
+                            // FIXFIXFIX - check for computer opponent
+                            SetMoveState(MoveStateType.SelectSource);
+                        } else {
+                            // Game is over!
+                            SetMoveState(MoveStateType.GameOver);
+                            // FIXFIXFIX - decorate the board with a result message.
+                        }
                     } else {
-                        // FIXFIXFIX - check for computer opponent
+                        // Not a valid move, so cancel the current move and start over.
                         SetMoveState(MoveStateType.SelectSource);
                     }
-
                 } else {
-                    throw 'Invalid move state: ' + MoveStateType[MoveState];
+                    // Move state does not allow clicking on squares
                 }
             }
         }
