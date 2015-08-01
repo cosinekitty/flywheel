@@ -251,6 +251,7 @@ var FwDemo;
         }
         var rotateButton = $('#RotateButton');
         rotateButton.click(function () {
+            // click
             RotateFlag = !RotateFlag;
             DrawBoard(TheBoard);
             SetMoveState(MoveState); // refresh clickable squares
@@ -263,10 +264,33 @@ var FwDemo;
         });
         var prevTurnButton = $('#PrevTurnButton');
         prevTurnButton.click(function () {
+            // click
         }).hover(function () {
             // hover in
+            prevTurnButton.prop('src', 'shadow2/media-step-backward-4x.png');
         }, function () {
             // hover out
+            prevTurnButton.prop('src', 'shadow1/media-step-backward-4x.png');
+        });
+        var nextTurnButton = $('#NextTurnButton');
+        nextTurnButton.click(function () {
+            // click
+        }).hover(function () {
+            // hover in
+            nextTurnButton.prop('src', 'shadow2/media-step-forward-4x.png');
+        }, function () {
+            // hover out
+            nextTurnButton.prop('src', 'shadow1/media-step-forward-4x.png');
+        });
+        var playPauseStopButton = $('#PlayPauseStopButton');
+        playPauseStopButton.click(function () {
+            // click
+        }).hover(function () {
+            // hover in
+            playPauseStopButton.prop('src', 'shadow2/media-play-4x.png');
+        }, function () {
+            // hover out
+            playPauseStopButton.prop('src', 'shadow1/media-play-4x.png');
         });
     }
     function InitPage() {
