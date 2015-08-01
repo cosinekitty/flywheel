@@ -85,7 +85,15 @@ var FwDemo;
     }
     function InitBoardDisplay() {
         var x, y;
-        var html = '<img id="RotateButton" src="shadow1/loop-circular-8x.png" alt="Rotate board" style="position:absolute; width:76px; height:64px; top:3px; left:590px;" title="Rotate board">';
+        var mediaGroupDx = -15;
+        var mediaHorSpacing = 60;
+        var html = '<img id="RotateButton" src="shadow1/loop-circular-8x.png" alt="Rotate board" style="position:absolute; width:76px; height:64px; top:3px; left:590px;" title="Rotate board">\n';
+        html += '<img id="PrevTurnButton" src="shadow1/media-step-backward-4x.png" style="position:absolute; width:48px; height:40px; top:' +
+            (SquarePixels * 8 + 55) + 'px; left:' + (SquarePixels * 4 - mediaHorSpacing + mediaGroupDx) + 'px;" title="Previous turn">\n';
+        html += '<img id="PlayPauseStopButton" src="shadow1/media-play-4x.png" style="position:absolute; width:48px; height:40px; top:' +
+            (SquarePixels * 8 + 55 + 2) + 'px; left:' + (SquarePixels * 4 + 3 + mediaGroupDx) + 'px;" title="">\n';
+        html += '<img id="NextTurnButton" src="shadow1/media-step-forward-4x.png" style="position:absolute; width:40px; height:38px; top:' +
+            (SquarePixels * 8 + 55) + 'px; left:' + (SquarePixels * 4 + mediaHorSpacing + mediaGroupDx) + 'px;" title="Next turn">\n';
         for (y = 0; y < 8; ++y) {
             for (x = 0; x < 8; ++x) {
                 html += MakeImageContainer(x, y);
@@ -252,6 +260,13 @@ var FwDemo;
         }, function () {
             // hover out
             rotateButton.prop('src', 'shadow1/loop-circular-8x.png');
+        });
+        var prevTurnButton = $('#PrevTurnButton');
+        prevTurnButton.click(function () {
+        }).hover(function () {
+            // hover in
+        }, function () {
+            // hover out
         });
     }
     function InitPage() {

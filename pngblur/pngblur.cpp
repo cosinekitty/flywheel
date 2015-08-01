@@ -21,6 +21,8 @@ struct Parameters
     int green;
     int blue;
     int alpha;
+    int forcedWidth;
+    int forcedHeight;
 };
 
 const int BytesPerPixel = 4;            // red, green, blue, alpha
@@ -151,15 +153,15 @@ public:
         return output;
     }
 
-    ImageBuffer Crop() const
+    ImageBuffer Crop(int forcedWidth, int forcedHeight) const
     {
         // Find crop boundary.
-        // Look for min x, max x, min y, max y where there is a nonzero alpha value.
         int x1 = width - 1;
         int x2 = 0;
         int y1 = height - 1;
         int y2 = 0;
 
+        // Look for min x, max x, min y, max y where there is a nonzero alpha value.
         int offset = 0;
         for (int y=0; y < height; ++y)
         {
@@ -173,6 +175,13 @@ public:
                     if (y > y2) y2 = y;
                 }
             }
+        }
+        
+        if ((forcedWidth > 0) && (forcedHeight > 0))
+        {
+            // Override with manual cropping dimensions.
+            x2 = x1 + forcedWidth  - 1;
+            y2 = y1 + forcedHeight - 1;
         }
 
         if (x1 > x2 || y1 > y2)
@@ -298,7 +307,7 @@ bool Transform(
 
 int main(int argc, const char *argv[])
 {
-    if (argc != 10)
+    if (argc < 10)
     {
         PrintUsage();
         return 1;
@@ -317,6 +326,26 @@ int main(int argc, const char *argv[])
         ScanInteger(argv[8], parms.blue,   "blue") &&
         ScanInteger(argv[9], parms.alpha,  "alpha"))
     {
+        bool ok = false;
+        if (argc == 12)
+        {
+            ok = ScanInteger(argv[10], parms.forcedWidth,  "forcedWidth" ) &&
+                 ScanInteger(argv[11], parms.forcedHeight, "forcedHeight");
+        }
+        else if (argc == 10)
+        {
+            ok = true;
+        }
+        else
+        {
+            PrintUsage();
+        }
+        
+        if (!ok)
+        {
+            return 1;
+        }
+        
         using namespace std;
         vector<unsigned char> inputImage;   // raw pixels in RGBA order
         unsigned inputWidth;
@@ -352,7 +381,7 @@ void PrintUsage()
     using namespace std;
 
     cout << endl;
-    cout << "USAGE:  pngblur in.png out.png dx dy radius red green blue alpha" << endl;
+    cout << "USAGE:  pngblur in.png out.png dx dy radius red green blue alpha [forcedWidth forcedHeight]" << endl;
     cout << endl;
 }
 
@@ -468,7 +497,7 @@ bool Transform(
 
     // Automatically crop the output to the smallest rectangle that contains
     // all pixels with a (significantly) nonzero alpha value.
-    ImageBuffer cropped = output.Crop();
+    ImageBuffer cropped = output.Crop(parms.forcedWidth, parms.forcedHeight);
 
     outputImage  = cropped.MakeOutputVector();
     outputWidth  = cropped.Width();
