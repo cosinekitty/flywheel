@@ -307,6 +307,8 @@ bool Transform(
 
 int main(int argc, const char *argv[])
 {
+    using namespace std;
+    
     if (argc < 10)
     {
         PrintUsage();
@@ -326,27 +328,33 @@ int main(int argc, const char *argv[])
         ScanInteger(argv[8], parms.blue,   "blue") &&
         ScanInteger(argv[9], parms.alpha,  "alpha"))
     {
-        bool ok = false;
-        if (argc == 12)
+        for (int i = 10; i < argc; ++i)
         {
-            ok = ScanInteger(argv[10], parms.forcedWidth,  "forcedWidth" ) &&
-                 ScanInteger(argv[11], parms.forcedHeight, "forcedHeight");
-        }
-        else if (argc == 10)
-        {
-            ok = true;
-        }
-        else
-        {
-            PrintUsage();
+            if (0 == strcmp(argv[i], "--crop"))
+            {
+                if (i+2 >= argc)
+                {
+                    cerr << "Missing dimension(s) after --crop" << endl;
+                    return 1;   
+                }
+                
+                if (ScanInteger(argv[i+1], parms.forcedWidth,  "forcedWidth" ) &&
+                    ScanInteger(argv[i+2], parms.forcedHeight, "forcedHeight"))
+                {
+                    i += 2;     // skip extra 2 parameters
+                }
+                else
+                {
+                    return 1;   // error parsing dimensions
+                }
+            }
+            else
+            {
+                cerr << "Unknown command-line option '" << argv[i] << "'" << endl;
+                return 1;
+            }
         }
         
-        if (!ok)
-        {
-            return 1;
-        }
-        
-        using namespace std;
         vector<unsigned char> inputImage;   // raw pixels in RGBA order
         unsigned inputWidth;
         unsigned inputHeight;
@@ -380,9 +388,20 @@ void PrintUsage()
 {
     using namespace std;
 
-    cout << endl;
-    cout << "USAGE:  pngblur in.png out.png dx dy radius red green blue alpha [forcedWidth forcedHeight]" << endl;
-    cout << endl;
+    cout << 
+        "\n"
+        "USAGE:  pngblur in.png out.png dx dy radius Rs Gs Bs As [--crop cw ch]\n"
+        "\n"
+        "dx = horizontal pixel shift of shadow\n"
+        "dy = vertical pixel shift of shadow\n"
+        "radius = shadow blurring radius in pixels\n"
+        "Rs = red   color component of shadow: 0..255\n"
+        "Gs = green color component of shadow: 0..255\n"
+        "Bs = blue  color component of shadow: 0..255\n"
+        "As = alpha opaqueness of shadow: 0..255\n"
+        "cw = optional cropping pixel width\n"
+        "ch = optional cropping pixel height\n"
+        << endl;
 }
 
 bool ScanInteger(const char *text, int& value, const char *name)
