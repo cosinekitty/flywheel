@@ -27,6 +27,10 @@ var FwDemo;
     var NextTurnEnabled = false;
     var PlayStopEnabled = false;
     var PlayStopState = PlayStopStateType.Play;
+    // The chess board stores the history, but we need to be able to redo
+    // moves that have been undone.
+    var GameHistory = [];
+    var GameHistoryIndex = 0;
     function TriStateDir(enabled, hover) {
         if (enabled) {
             return hover ? 'shadow2' : 'shadow1';
@@ -202,6 +206,7 @@ var FwDemo;
             }
         }
         PrevTurnEnabled = board.CanPopMove();
+        NextTurnEnabled = (GameHistoryIndex < GameHistory.length);
         $('#PrevTurnButton').prop('src', PrevButtonImage(false));
         $('#NextTurnButton').prop('src', NextButtonImage(false));
         $('#PlayPauseStopButton').prop('src', PlayStopImage(false));
@@ -258,6 +263,8 @@ var FwDemo;
                     }
                     if (chosenMove) {
                         TheBoard.PushMove(chosenMove);
+                        GameHistory = TheBoard.MoveHistory();
+                        GameHistoryIndex = GameHistory.length;
                         DrawBoard(TheBoard);
                         var result = TheBoard.GetGameResult();
                         if (result.status === Flywheel.GameStatus.InProgress) {
@@ -313,6 +320,7 @@ var FwDemo;
             if (PrevTurnEnabled) {
                 // TODO: Cancel any computer analysis here.
                 TheBoard.PopMove();
+                --GameHistoryIndex;
                 DrawBoard(TheBoard);
                 SetMoveState(MoveStateType.SelectSource);
             }
@@ -327,6 +335,9 @@ var FwDemo;
         nextTurnButton.click(function () {
             // click
             if (NextTurnEnabled) {
+                TheBoard.PushMove(GameHistory[GameHistoryIndex++]);
+                DrawBoard(TheBoard);
+                SetMoveState(MoveStateType.SelectSource);
             }
         }).hover(function () {
             // hover in
