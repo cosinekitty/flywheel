@@ -9,6 +9,13 @@ var FwDemo;
         MoveStateType[MoveStateType["GameOver"] = 3] = "GameOver";
     })(MoveStateType || (MoveStateType = {}));
     ;
+    var PlayStopStateType;
+    (function (PlayStopStateType) {
+        PlayStopStateType[PlayStopStateType["Play"] = 0] = "Play";
+        PlayStopStateType[PlayStopStateType["Stop"] = 1] = "Stop";
+        PlayStopStateType[PlayStopStateType["Pause"] = 2] = "Pause";
+    })(PlayStopStateType || (PlayStopStateType = {}));
+    ;
     var SquarePixels = 70;
     var TheBoard = new Flywheel.Board();
     var RotateFlag = false;
@@ -16,6 +23,40 @@ var FwDemo;
     var SourceSquareSelector = null;
     var BgDark = '#8FA679';
     var BgPale = '#D4CEA3';
+    var PrevTurnEnabled = false;
+    var NextTurnEnabled = false;
+    var PlayStopEnabled = false;
+    var PlayStopState = PlayStopStateType.Play;
+    function TriStateDir(enabled, hover) {
+        if (enabled) {
+            return hover ? 'shadow2' : 'shadow1';
+        }
+        return 'shadow0';
+    }
+    function PrevButtonImage(hover) {
+        return TriStateDir(PrevTurnEnabled, hover) + '/media-step-backward-4x.png';
+    }
+    function NextButtonImage(hover) {
+        return TriStateDir(PrevTurnEnabled, hover) + '/media-step-forward-4x.png';
+    }
+    function PlayStopImage(hover) {
+        // Figure out which kind of image to show: play, pause, stop.
+        var fn;
+        switch (PlayStopState) {
+            case PlayStopStateType.Play:
+                fn = 'media-play-4x.png';
+                break;
+            case PlayStopStateType.Stop:
+                fn = 'media-stop-4x.png';
+                break;
+            case PlayStopStateType.Pause:
+            default:
+                fn = 'media-pause-4x.png';
+                break;
+        }
+        // Figure out whether to show disabled, normal, or highlighted version.
+        return TriStateDir(PlayStopEnabled, hover) + '/' + fn;
+    }
     function MakeImageHtml(s) {
         var fn;
         switch (s) {
@@ -88,11 +129,11 @@ var FwDemo;
         var mediaGroupDx = -15;
         var mediaHorSpacing = 60;
         var html = '<img id="RotateButton" src="shadow1/loop-circular-8x.png" alt="Rotate board" style="position:absolute; width:76px; height:64px; top:3px; left:590px;" title="Rotate board">\n';
-        html += '<img id="PrevTurnButton" src="shadow1/media-step-backward-4x.png" style="position:absolute; width:48px; height:40px; top:' +
+        html += '<img id="PrevTurnButton" src="' + PrevButtonImage(false) + '" style="position:absolute; width:44px; height:44px; top:' +
             (SquarePixels * 8 + 55) + 'px; left:' + (SquarePixels * 4 - mediaHorSpacing + mediaGroupDx) + 'px;" title="Previous turn">\n';
-        html += '<img id="PlayPauseStopButton" src="shadow1/media-play-4x.png" style="position:absolute; width:48px; height:40px; top:' +
-            (SquarePixels * 8 + 55 + 2) + 'px; left:' + (SquarePixels * 4 + 3 + mediaGroupDx) + 'px;" title="">\n';
-        html += '<img id="NextTurnButton" src="shadow1/media-step-forward-4x.png" style="position:absolute; width:40px; height:38px; top:' +
+        html += '<img id="PlayPauseStopButton" src="' + PlayStopImage(false) + '" style="position:absolute; width:44px; height:44px; top:' +
+            (SquarePixels * 8 + 55) + 'px; left:' + (SquarePixels * 4 + 3 + mediaGroupDx) + 'px;" title="">\n';
+        html += '<img id="NextTurnButton" src="' + NextButtonImage(false) + '" style="position:absolute; width:44px; height:44px; top:' +
             (SquarePixels * 8 + 55) + 'px; left:' + (SquarePixels * 4 + mediaHorSpacing + mediaGroupDx) + 'px;" title="Next turn">\n';
         for (y = 0; y < 8; ++y) {
             for (x = 0; x < 8; ++x) {
@@ -267,30 +308,30 @@ var FwDemo;
             // click
         }).hover(function () {
             // hover in
-            prevTurnButton.prop('src', 'shadow2/media-step-backward-4x.png');
+            prevTurnButton.prop('src', PrevButtonImage(true));
         }, function () {
             // hover out
-            prevTurnButton.prop('src', 'shadow1/media-step-backward-4x.png');
+            prevTurnButton.prop('src', PrevButtonImage(false));
         });
         var nextTurnButton = $('#NextTurnButton');
         nextTurnButton.click(function () {
             // click
         }).hover(function () {
             // hover in
-            nextTurnButton.prop('src', 'shadow2/media-step-forward-4x.png');
+            nextTurnButton.prop('src', NextButtonImage(true));
         }, function () {
             // hover out
-            nextTurnButton.prop('src', 'shadow1/media-step-forward-4x.png');
+            nextTurnButton.prop('src', NextButtonImage(false));
         });
         var playPauseStopButton = $('#PlayPauseStopButton');
         playPauseStopButton.click(function () {
             // click
         }).hover(function () {
             // hover in
-            playPauseStopButton.prop('src', 'shadow2/media-play-4x.png');
+            playPauseStopButton.prop('src', PlayStopImage(true));
         }, function () {
             // hover out
-            playPauseStopButton.prop('src', 'shadow1/media-play-4x.png');
+            playPauseStopButton.prop('src', PlayStopImage(false));
         });
     }
     function InitPage() {

@@ -1,16 +1,23 @@
 #!/bin/bash
 
-for ICON in loop-circular-8x.png media-{step-backward,step-forward}-4x.png; do
-    echo $ICON
+for ICON in loop-circular-8x.png; do
+    #echo $ICON
+    ../pngblur/pngblur ../icon/$ICON shadow1/$ICON 6 4 5    0   5   0  100
+    ../pngblur/pngblur ../icon/$ICON shadow2/$ICON 6 4 5  100   5  20  100
+done
+
+for ICON in media-{step-backward,step-forward}-4x.png; do
+    #echo $ICON
+    ../pngblur/pngblur ../icon/$ICON shadow0/$ICON 6 4 5    0   5   0  100 --crop 48 40 --corner 11 15 --fade 80
     ../pngblur/pngblur ../icon/$ICON shadow1/$ICON 6 4 5    0   5   0  100
     ../pngblur/pngblur ../icon/$ICON shadow2/$ICON 6 4 5  100   5  20  100
 done
 
 # Icons to force to exactly 44x44 pixels
 for ICON in media-{pause,play,stop}-4x.png; do
-    echo $ICON
-    ../pngblur/pngblur ../icon/$ICON shadow0/$ICON 6 4 5    0   5   0  100  --crop 44 44  --fade 80
-    ../pngblur/pngblur ../icon/$ICON shadow1/$ICON 6 4 5    0   5   0  100  --crop 44 44
-    ../pngblur/pngblur ../icon/$ICON shadow2/$ICON 6 4 5  100   5  20  100  --crop 44 44
+    #echo $ICON
+    ../pngblur/pngblur ../icon/$ICON shadow0/$ICON 6 4 5    0   5   0  100  --crop 44 44 --corner 15 13 --fade 80
+    ../pngblur/pngblur ../icon/$ICON shadow1/$ICON 6 4 5    0   5   0  100  --crop 44 44 --corner 15 13
+    ../pngblur/pngblur ../icon/$ICON shadow2/$ICON 6 4 5  100   5  20  100  --crop 44 44 --corner 15 13
 done
 
