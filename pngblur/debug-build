@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# This is for making a debug build of pngblur.
+
+g++ -std=c++11 \
+    -Wall -Wextra -Wshadow -Wnon-virtual-dtor -Wunused -Woverloaded-virtual \
+    -g -O0 -o debug-pngblur \
+    lodepng.cpp pngblur.cpp

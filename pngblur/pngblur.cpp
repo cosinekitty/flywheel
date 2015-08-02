@@ -23,6 +23,7 @@ struct Parameters
     int alpha;
     int forcedWidth;
     int forcedHeight;
+    int fadeAlpha;
 };
 
 const int BytesPerPixel = 4;            // red, green, blue, alpha
@@ -348,6 +349,28 @@ int main(int argc, const char *argv[])
                     return 1;   // error parsing dimensions
                 }
             }
+            else if (0 == strcmp(argv[i], "--fade"))
+            {
+                if (i+1 >= argc)
+                {
+                    cerr << "Missing fade value after --fade" << endl;
+                    return 1;
+                }
+                
+                if (ScanInteger(argv[i+1], parms.fadeAlpha, "fadeAlpha"))
+                {
+                    if (parms.fadeAlpha < 1 || parms.fadeAlpha > 255)
+                    {
+                        cerr << "Value after --fade must be in the range 1..255" << endl;
+                        return 1;
+                    }
+                    ++i;    // skip extra parameter
+                }
+                else
+                {
+                    return 1;   // error parsing fade value
+                }
+            }
             else
             {
                 cerr << "Unknown command-line option '" << argv[i] << "'" << endl;
@@ -390,7 +413,7 @@ void PrintUsage()
 
     cout << 
         "\n"
-        "USAGE:  pngblur in.png out.png dx dy radius Rs Gs Bs As [--crop cw ch]\n"
+        "USAGE:  pngblur in.png out.png dx dy radius Rs Gs Bs As [--crop cw ch] [--fade Af]\n"
         "\n"
         "dx = horizontal pixel shift of shadow\n"
         "dy = vertical pixel shift of shadow\n"
@@ -399,8 +422,9 @@ void PrintUsage()
         "Gs = green color component of shadow: 0..255\n"
         "Bs = blue  color component of shadow: 0..255\n"
         "As = alpha opaqueness of shadow: 0..255\n"
-        "cw = optional cropping pixel width\n"
-        "ch = optional cropping pixel height\n"
+        "cw = cropping pixel width\n"
+        "ch = cropping pixel height\n"
+        "Af = alpha value for fading the original object: 1..255\n"
         << endl;
 }
 
@@ -495,6 +519,12 @@ bool Transform(
     ImageBuffer output(outputWidth, outputHeight);
     const int oh = static_cast<int>(outputHeight);
     const int ow = static_cast<int>(outputWidth);
+    
+    const double fade = 
+        ((1 <= parms.fadeAlpha) && (parms.fadeAlpha <= 255)) ? 
+        (static_cast<double>(parms.fadeAlpha) / 255.0) : 
+        1.0;
+    
     for (int oy=0; oy < oh; ++oy)
     {
         int by = oy;
@@ -510,6 +540,7 @@ bool Transform(
             Pixel bp = blurred.GetPixel(bx, by);
             Pixel op = original.GetPixel(ix, iy);
             Pixel mp = MixPixels(bp, op, shadowAlpha);
+            mp.alpha *= fade;
             output.SetPixel(ox, oy, mp);
         }
     }

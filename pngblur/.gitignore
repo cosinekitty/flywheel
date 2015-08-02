@@ -1,4 +1,5 @@
 lodepng.cpp
 lodepng.h
 pngblur
+debug-pngblur
 test*.png

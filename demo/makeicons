@@ -9,6 +9,7 @@ done
 # Icons to force to exactly 44x44 pixels
 for ICON in media-{pause,play,stop}-4x.png; do
     echo $ICON
+    ../pngblur/pngblur ../icon/$ICON shadow0/$ICON 6 4 5    0   5   0  100  --crop 44 44  --fade 80
     ../pngblur/pngblur ../icon/$ICON shadow1/$ICON 6 4 5    0   5   0  100  --crop 44 44
     ../pngblur/pngblur ../icon/$ICON shadow2/$ICON 6 4 5  100   5  20  100  --crop 44 44
 done
