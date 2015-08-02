@@ -39,7 +39,7 @@ module FwDemo {
     }
 
     function NextButtonImage(hover:boolean):string {
-        return TriStateDir(PrevTurnEnabled, hover) + '/media-step-forward-4x.png';
+        return TriStateDir(NextTurnEnabled, hover) + '/media-step-forward-4x.png';
     }
 
     function PlayStopImage(hover:boolean):string {
@@ -200,6 +200,12 @@ module FwDemo {
                 sdiv.html(img);
             }
         }
+
+        PrevTurnEnabled = board.CanPopMove();
+
+        $('#PrevTurnButton').prop('src', PrevButtonImage(false));
+        $('#NextTurnButton').prop('src', NextButtonImage(false));
+        $('#PlayPauseStopButton').prop('src', PlayStopImage(false));
     }
 
     let BoardCoords = function(e) {
@@ -316,6 +322,12 @@ module FwDemo {
         var prevTurnButton = $('#PrevTurnButton');
         prevTurnButton.click(function(){
             // click
+            if (PrevTurnEnabled) {
+                // TODO: Cancel any computer analysis here.
+                TheBoard.PopMove();
+                DrawBoard(TheBoard);
+                SetMoveState(MoveStateType.SelectSource);
+            }
         }).hover(function(){
             // hover in
             prevTurnButton.prop('src', PrevButtonImage(true));
@@ -327,6 +339,9 @@ module FwDemo {
         var nextTurnButton = $('#NextTurnButton');
         nextTurnButton.click(function(){
             // click
+            if (NextTurnEnabled) {
+
+            }
         }).hover(function(){
             // hover in
             nextTurnButton.prop('src', NextButtonImage(true));
@@ -338,6 +353,9 @@ module FwDemo {
         var playPauseStopButton = $('#PlayPauseStopButton');
         playPauseStopButton.click(function(){
             // click
+            if (PlayStopEnabled) {
+
+            }
         }).hover(function(){
             // hover in
             playPauseStopButton.prop('src', PlayStopImage(true));
