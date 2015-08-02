@@ -132,7 +132,8 @@ var FwDemo;
         var x, y;
         var mediaGroupDx = -15;
         var mediaHorSpacing = 60;
-        var html = '<img id="RotateButton" src="shadow1/loop-circular-8x.png" alt="Rotate board" style="position:absolute; width:76px; height:64px; top:3px; left:590px;" title="Rotate board">\n';
+        var html = '<img id="RotateButton" src="shadow1/loop-circular-8x.png" alt="Rotate board" style="position:absolute; width:76px; height:64px; top:' +
+            (SquarePixels * 8 + 45) + 'px; left: 1px;" title="Rotate board">\n';
         html += '<img id="PrevTurnButton" src="' + PrevButtonImage(false) + '" style="position:absolute; width:44px; height:44px; top:' +
             (SquarePixels * 8 + 55) + 'px; left:' + (SquarePixels * 4 - mediaHorSpacing + mediaGroupDx) + 'px;" title="Previous turn">\n';
         html += '<img id="PlayPauseStopButton" src="' + PlayStopImage(false) + '" style="position:absolute; width:44px; height:44px; top:' +

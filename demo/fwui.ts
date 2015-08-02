@@ -125,7 +125,8 @@ module FwDemo {
         let mediaGroupDx = -15;
         let mediaHorSpacing = 60;
 
-        let html = '<img id="RotateButton" src="shadow1/loop-circular-8x.png" alt="Rotate board" style="position:absolute; width:76px; height:64px; top:3px; left:590px;" title="Rotate board">\n';
+        let html = '<img id="RotateButton" src="shadow1/loop-circular-8x.png" alt="Rotate board" style="position:absolute; width:76px; height:64px; top:'+
+            (SquarePixels*8 +45) + 'px; left: 1px;" title="Rotate board">\n';
 
         html += '<img id="PrevTurnButton" src="' + PrevButtonImage(false) + '" style="position:absolute; width:44px; height:44px; top:' +
             (SquarePixels*8 + 55) + 'px; left:' + (SquarePixels*4 - mediaHorSpacing + mediaGroupDx) + 'px;" title="Previous turn">\n';
