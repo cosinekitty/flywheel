@@ -14,16 +14,37 @@ inline int AbsoluteValue(int x)
 
 struct Parameters
 {
-    int dx;
-    int dy;
-    int radius;
-    int red;
-    int green;
-    int blue;
-    int alpha;
-    int forcedWidth;
-    int forcedHeight;
-    int fadeAlpha;
+    bool verbose;
+    int  dx;
+    int  dy;
+    int  radius;
+    int  red;
+    int  green;
+    int  blue;
+    int  alpha;
+    int  forcedWidth;
+    int  forcedHeight;
+    int  fadeAlpha;
+    bool cornerOverride;
+    int  xCorner;
+    int  yCorner;
+    
+    Parameters()
+        : verbose(false)
+        , dx(0)
+        , dy(0)
+        , radius(0)
+        , red(0)
+        , green(0)
+        , blue(0)
+        , alpha(0)
+        , forcedWidth(0)
+        , forcedHeight(0)
+        , fadeAlpha(0)
+        , cornerOverride(false)
+        , xCorner(0)
+        , yCorner(0)
+    {}
 };
 
 const int BytesPerPixel = 4;            // red, green, blue, alpha
@@ -154,7 +175,7 @@ public:
         return output;
     }
 
-    ImageBuffer Crop(int forcedWidth, int forcedHeight) const
+    ImageBuffer Crop(const Parameters& parms) const
     {
         // Find crop boundary.
         int x1 = width - 1;
@@ -178,11 +199,17 @@ public:
             }
         }
         
-        if ((forcedWidth > 0) && (forcedHeight > 0))
+        if (parms.cornerOverride)
+        {
+            x1 = parms.xCorner;
+            y1 = parms.yCorner;
+        }
+        
+        if ((parms.forcedWidth > 0) && (parms.forcedHeight > 0))
         {
             // Override with manual cropping dimensions.
-            x2 = x1 + forcedWidth  - 1;
-            y2 = y1 + forcedHeight - 1;
+            x2 = x1 + parms.forcedWidth  - 1;
+            y2 = y1 + parms.forcedHeight - 1;
         }
 
         if (x1 > x2 || y1 > y2)
@@ -193,11 +220,12 @@ public:
         int cw = x2 - x1 + 1;
         int ch = y2 - y1 + 1;
 
-#if 0
-        std::cout << "Cropped " << width << "x" << height <<
-            " to " << cw << "x" << ch <<
-            " (x1=" << x1 << " y1=" << y1 << " x2=" << x2 << " y2=" << y2 << ")" << std::endl;
-#endif
+        if (parms.verbose)
+        {
+            std::cout << "Cropped " << width << "x" << height <<
+                " to " << cw << "x" << ch <<
+                " (x1=" << x1 << " y1=" << y1 << " x2=" << x2 << " y2=" << y2 << ")" << std::endl;
+        }
 
         ImageBuffer crop(cw, ch);
         for (int y=0; y < ch; ++y)
@@ -319,7 +347,6 @@ int main(int argc, const char *argv[])
     const char * const inFileName  = argv[1];
     const char * const outFileName = argv[2];
     Parameters parms;
-    memset(&parms, 0, sizeof(parms));
 
     if (ScanInteger(argv[3], parms.dx,     "dx") &&
         ScanInteger(argv[4], parms.dy,     "dy") &&
@@ -339,14 +366,32 @@ int main(int argc, const char *argv[])
                     return 1;   
                 }
                 
-                if (ScanInteger(argv[i+1], parms.forcedWidth,  "forcedWidth" ) &&
-                    ScanInteger(argv[i+2], parms.forcedHeight, "forcedHeight"))
+                if (ScanInteger(argv[i+1], parms.forcedWidth,  "cw" ) &&
+                    ScanInteger(argv[i+2], parms.forcedHeight, "ch"))
                 {
                     i += 2;     // skip extra 2 parameters
                 }
                 else
                 {
-                    return 1;   // error parsing dimensions
+                    return 1;   // error parsing cropping dimensions
+                }
+            }
+            else if (0 == strcmp(argv[i], "--corner"))
+            {
+                if (i+2 >= argc)
+                {
+                    cerr << "Missing coordinate(s) after --corner" << endl;
+                    return 1;
+                }
+                if (ScanInteger(argv[i+1], parms.xCorner, "cx") &&
+                    ScanInteger(argv[i+2], parms.yCorner, "cy"))
+                {
+                    parms.cornerOverride = true;
+                    i += 2;     // skip extra 2 parameters
+                }
+                else
+                {
+                    return 1;   // error parsing corner coordinates
                 }
             }
             else if (0 == strcmp(argv[i], "--fade"))
@@ -371,6 +416,10 @@ int main(int argc, const char *argv[])
                     return 1;   // error parsing fade value
                 }
             }
+            else if (0 == strcmp(argv[i], "--verbose"))
+            {
+                parms.verbose = true;
+            }
             else
             {
                 cerr << "Unknown command-line option '" << argv[i] << "'" << endl;
@@ -387,6 +436,11 @@ int main(int argc, const char *argv[])
             cerr << "lodepng decoder error " << error << ": " << lodepng_error_text(error) << endl;
             return 2;
         }
+        
+        if (parms.verbose)
+        {
+            cout << "Loaded file '" << inFileName << "'" << endl;
+        }
 
         vector<unsigned char> outputImage;
         unsigned outputWidth = 0;
@@ -399,6 +453,11 @@ int main(int argc, const char *argv[])
                 cerr << "lodepng encoder error " << error << ": " << lodepng_error_text(error) << endl;
                 return 3;
             }
+        }
+        
+        if (parms.verbose)
+        {
+            cout << "Wrote file '" << outFileName << "'" << endl << endl;
         }
 
         return 0;
@@ -415,16 +474,33 @@ void PrintUsage()
         "\n"
         "USAGE:  pngblur in.png out.png dx dy radius Rs Gs Bs As [--crop cw ch] [--fade Af]\n"
         "\n"
-        "dx = horizontal pixel shift of shadow\n"
-        "dy = vertical pixel shift of shadow\n"
-        "radius = shadow blurring radius in pixels\n"
-        "Rs = red   color component of shadow: 0..255\n"
-        "Gs = green color component of shadow: 0..255\n"
-        "Bs = blue  color component of shadow: 0..255\n"
-        "As = alpha opaqueness of shadow: 0..255\n"
-        "cw = cropping pixel width\n"
-        "ch = cropping pixel height\n"
-        "Af = alpha value for fading the original object: 1..255\n"
+        "    dx = horizontal pixel shift of shadow\n"
+        "    dy = vertical pixel shift of shadow\n"
+        "    radius = shadow blurring radius in pixels\n"
+        "    Rs = red   color component of shadow: 0..255\n"
+        "    Gs = green color component of shadow: 0..255\n"
+        "    Bs = blue  color component of shadow: 0..255\n"
+        "    As = alpha opaqueness of shadow: 0..255\n"
+        "\n"
+        "Options are as follows:\n"
+        "\n"
+        "--crop cw ch\n"
+        "    Manual override for cropping dimensions.\n"
+        "    cw = cropping pixel width\n"
+        "    ch = cropping pixel height\n"
+        "\n"
+        "--corner cx cy\n"
+        "    Manual override for cropping origin.\n"
+        "    cx = Leftmost pixel to include in output.\n"
+        "    cy = Topmost pixel to include in output.\n"
+        "\n"
+        "--fade Af\n"
+        "    Useful for making a grayed-out (disabled) icon.\n"
+        "    Af = alpha value for fading the original object: 1..255\n"
+        "\n"
+        "--verbose\n"
+        "    Print extra diagnostic information.\n"
+        "\n"
         << endl;
 }
 
@@ -547,7 +623,7 @@ bool Transform(
 
     // Automatically crop the output to the smallest rectangle that contains
     // all pixels with a (significantly) nonzero alpha value.
-    ImageBuffer cropped = output.Crop(parms.forcedWidth, parms.forcedHeight);
+    ImageBuffer cropped = output.Crop(parms);
 
     outputImage  = cropped.MakeOutputVector();
     outputWidth  = cropped.Width();
