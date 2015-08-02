@@ -154,6 +154,9 @@ var Flywheel;
         Move.prototype.Clone = function () {
             return new Move(this.source, this.dest, this.prom, this.score, this.hash_a);
         };
+        Move.prototype.Equals = function (other) {
+            return (this.source == other.source) && (this.dest == other.dest) && (this.prom == other.prom);
+        };
         Move.prototype.toString = function () {
             var notation = Board.Algebraic(this.source) + Board.Algebraic(this.dest);
             switch (this.prom) {

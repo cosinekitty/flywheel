@@ -273,8 +273,13 @@ module FwDemo {
 
                     if (chosenMove) {
                         TheBoard.PushMove(chosenMove);
-                        GameHistory = TheBoard.MoveHistory();
-                        GameHistoryIndex = GameHistory.length;
+                        if ((GameHistoryIndex < GameHistory.length) && chosenMove.Equals(GameHistory[GameHistoryIndex])) {
+                            // Special case: treat this move as a redo, so don't disrupt the history.
+                            ++GameHistoryIndex;
+                        } else {
+                            GameHistory = TheBoard.MoveHistory();
+                            GameHistoryIndex = GameHistory.length;
+                        }
                         DrawBoard(TheBoard);
                         let result = TheBoard.GetGameResult();
                         if (result.status === Flywheel.GameStatus.InProgress) {

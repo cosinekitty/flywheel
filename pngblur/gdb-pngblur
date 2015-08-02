@@ -3,5 +3,5 @@
 # Found a minor bug in lodepng : does not report error when cannot create output file
 # because of a non-existent directory
 
-gdb --args ./debug-pngblur ../icon/loop-circular-8x.png baddir/x.png  6 4 5  0   5   0  100
+gdb -tui --args ./debug-pngblur ../icon/loop-circular-8x.png baddir/x.png  6 4 5  0   5   0  100
 

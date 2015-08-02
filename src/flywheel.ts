@@ -157,6 +157,10 @@ module Flywheel {
             return new Move(this.source, this.dest, this.prom, this.score, this.hash_a);
         }
 
+        public Equals(other:Move): boolean {
+            return (this.source == other.source) && (this.dest == other.dest) && (this.prom == other.prom);
+        }
+
         public toString(): string {      // convert the move to long algebraic form: 'e2e4' or 'e7e8q' (promotion)
             var notation:string = Board.Algebraic(this.source) + Board.Algebraic(this.dest);
             switch (this.prom) {
