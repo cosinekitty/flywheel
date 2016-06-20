@@ -40,7 +40,7 @@ var FlyWorker;
             return bestPath;
         };
         return Worker;
-    })();
+    }());
     FlyWorker.Worker = Worker;
 })(FlyWorker || (FlyWorker = {}));
 if (typeof importScripts === 'function') {

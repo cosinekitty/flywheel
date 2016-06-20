@@ -130,7 +130,7 @@ var Flywheel;
         };
         Utility.IsInitialized = Utility.StaticInit();
         return Utility;
-    })();
+    }());
     (function (Score) {
         Score[Score["Draw"] = 0] = "Draw";
         Score[Score["Invalid"] = -2100000000] = "Invalid";
@@ -178,7 +178,7 @@ var Flywheel;
             return notation;
         };
         return Move;
-    })();
+    }());
     Flywheel.Move = Move;
     var HashValue = (function () {
         function HashValue(a, b, c) {
@@ -193,12 +193,12 @@ var Flywheel;
             return (this.a === other.a) && (this.b === other.b) && (this.c === other.c);
         };
         return HashValue;
-    })();
+    }());
     var MoveState = (function () {
         function MoveState() {
         }
         return MoveState;
-    })();
+    }());
     /*
         The 8x8 chess board is represented as a one-dimensional array.
         This allows for a very simple and efficient way of representing
@@ -265,7 +265,7 @@ var Flywheel;
             this.drawType = drawType;
         }
         return GameResult;
-    })();
+    }());
     Flywheel.GameResult = GameResult;
     var Board = (function () {
         function Board(fen) {
@@ -356,8 +356,8 @@ var Flywheel;
         Board.prototype.LegalMoves = function (rater) {
             var rawlist = this.RawMoves();
             var movelist = [];
-            for (var _i = 0; _i < rawlist.length; _i++) {
-                var raw = rawlist[_i];
+            for (var _i = 0, rawlist_1 = rawlist; _i < rawlist_1.length; _i++) {
+                var raw = rawlist_1[_i];
                 // Before we make a move, we have to set the move.hash_a
                 // to match the first 32 bits of the board's hash value.
                 // This is an inexpensive way to catch bugs
@@ -412,8 +412,8 @@ var Flywheel;
                 if (Utility.PieceSide[sq] === this.sideToMove) {
                     var movelist = [];
                     this.addMoves[sq].call(this, movelist, source);
-                    for (var _b = 0; _b < movelist.length; _b++) {
-                        var move = movelist[_b];
+                    for (var _b = 0, movelist_1 = movelist; _b < movelist_1.length; _b++) {
+                        var move = movelist_1[_b];
                         move.hash_a = this.hash.a;
                         this.PushMove(move);
                         var legal = !this.IsPlayerInCheck(this.enemy);
@@ -718,8 +718,8 @@ var Flywheel;
             // Look for algebraic notation first, because it is simpler.
             // Ignore in recursive calls, where we are trying to match PGN only.
             if (callDepth === 0) {
-                for (var _i = 0; _i < legal.length; _i++) {
-                    var move = legal[_i];
+                for (var _i = 0, legal_1 = legal; _i < legal_1.length; _i++) {
+                    var move = legal_1[_i];
                     if (move.toString() === notation) {
                         this.PushMove(move);
                         return true;
@@ -729,8 +729,8 @@ var Flywheel;
             // Getting here means we could not find algebraic match.
             // Look for PGN match, a more costly operation.
             if (notation.length >= 2 && notation.length <= 7) {
-                for (var _a = 0; _a < legal.length; _a++) {
-                    var move = legal[_a];
+                for (var _a = 0, legal_2 = legal; _a < legal_2.length; _a++) {
+                    var move = legal_2[_a];
                     var pgn = Board.FilterCheckSuffix(this.PgnFormat(move, legal));
                     if (pgn === notation) {
                         this.PushMove(move);
@@ -764,8 +764,8 @@ var Flywheel;
         Board.prototype.PushHistory = function (history) {
             if (history) {
                 var notationArray = history.split(' ');
-                for (var _i = 0; _i < notationArray.length; _i++) {
-                    var notation = notationArray[_i];
+                for (var _i = 0, notationArray_1 = notationArray; _i < notationArray_1.length; _i++) {
+                    var notation = notationArray_1[_i];
                     this.PushNotation(notation);
                 }
             }
@@ -1723,8 +1723,8 @@ var Flywheel;
             this.Update();
         };
         Board.IsLegal = function (move, legalMoveList) {
-            for (var _i = 0; _i < legalMoveList.length; _i++) {
-                var legal = legalMoveList[_i];
+            for (var _i = 0, legalMoveList_1 = legalMoveList; _i < legalMoveList_1.length; _i++) {
+                var legal = legalMoveList_1[_i];
                 if (move.source === legal.source && move.dest === legal.dest && move.prom === legal.prom) {
                     return true;
                 }
@@ -1770,8 +1770,8 @@ var Flywheel;
                 // destination and moving piece.
                 // Include only pawn promotions to the same promoted piece.
                 var compact = [];
-                for (var _i = 0; _i < legalMoveList.length; _i++) {
-                    var cmove = legalMoveList[_i];
+                for (var _i = 0, legalMoveList_2 = legalMoveList; _i < legalMoveList_2.length; _i++) {
+                    var cmove = legalMoveList_2[_i];
                     if ((cmove.dest === move.dest) && (cmove.prom === move.prom)) {
                         var cpiece = Utility.Neutral[this.square[cmove.source]];
                         if (cpiece === piece) {
@@ -1806,8 +1806,8 @@ var Flywheel;
                     */
                     var fileCount = 0;
                     var rankCount = 0;
-                    for (var _a = 0; _a < compact.length; _a++) {
-                        var cmove = compact[_a];
+                    for (var _a = 0, compact_1 = compact; _a < compact_1.length; _a++) {
+                        var cmove = compact_1[_a];
                         var calg = Board.Algebraic(cmove.source);
                         var cfile = calg.charAt(0);
                         var crank = calg.charAt(1);
@@ -1865,7 +1865,7 @@ var Flywheel;
         // Class/static stuff
         Board.IsInitialized = Board.StaticInit(); // simulate class static constructor
         return Board;
-    })();
+    }());
     Flywheel.Board = Board;
     //-------------------------------------------------------------------------------------------------------
     var BestPath = (function () {
@@ -1887,7 +1887,7 @@ var Flywheel;
             this.move.length = 0;
         };
         return BestPath;
-    })();
+    }());
     Flywheel.BestPath = BestPath;
     var Thinker = (function () {
         function Thinker() {
@@ -1948,8 +1948,8 @@ var Flywheel;
             bestPath.score = Score.NegInf;
             var bestScore = Score.NegInf;
             var currPath = new BestPath();
-            for (var _i = 0; _i < legal.length; _i++) {
-                var move = legal[_i];
+            for (var _i = 0, legal_3 = legal; _i < legal_3.length; _i++) {
+                var move = legal_3[_i];
                 board.PushMove(move);
                 // Tricky: we negate the return value, flip and negate the alpha-beta window.
                 // This is a "negamax" search -- whatever is good for one player is bad for the other.
@@ -1976,7 +1976,7 @@ var Flywheel;
             return bestScore;
         };
         return Thinker;
-    })();
+    }());
     Flywheel.Thinker = Thinker;
     //=====BEGIN HASH SALT=====
     var WhiteToMoveSalt = [0x66f9a833, 0x36d0a4f4, 0x829f8f19];
@@ -2327,3 +2327,4 @@ var Flywheel;
             [0x5bc2e69c, 0x12f33fc9, 0x4188b799], [0x06df0a17, 0x94c0b1cb, 0x35162120], [0xa9f9654c, 0x9b8c5813, 0xb228a184], [0x8a722a51, 0x71f16c13, 0x0c9ded30], [0x1cd1107c, 0xcdd12672, 0xe207ed90], [0xcf71e527, 0x7aa05aa4, 0x683d95b0]] //    B
     ];
 })(Flywheel || (Flywheel = {}));
+//# sourceMappingURL=flywheel.js.map

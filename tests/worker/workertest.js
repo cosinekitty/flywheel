@@ -135,7 +135,7 @@ var FlyWorkerTest;
             */
         };
         return Test;
-    })();
+    }());
     FlyWorkerTest.Test = Test;
 })(FlyWorkerTest || (FlyWorkerTest = {}));
 //# sourceMappingURL=workertest.js.map
