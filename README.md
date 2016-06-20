@@ -1,6 +1,6 @@
 ## Flywheel - An HTML5/Javascript chess engine
 
-Flywheel is a pure Javascript chess engine (still in development).
+[![Vanilla JS](vanilla-js-button.png)](http://vanilla-js.com/) Flywheel is a pure Javascript chess engine (still in development).
 
 ## Design goals
 
