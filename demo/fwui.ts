@@ -1,5 +1,3 @@
-/// <reference path="../src/flywheel.ts"/>
-
 module FwDemo {
     enum MoveStateType {
         OpponentTurn,   // not user's turn (computer's turn)
@@ -148,7 +146,7 @@ module FwDemo {
         for (x=0; x < 8; ++x) {
             html += MakeRankLabel(x);
         }
-        $('#DivBoard').html(html);
+        document.getElementById('DivBoard').innerHTML = html;
     }
 
     function AlgCoords(alg:string) {
@@ -163,7 +161,7 @@ module FwDemo {
             chessY: chessY,
             screenX: screenX,
             screenY: screenY,
-            selector: '#Square_' + screenX.toFixed() + screenY.toFixed()
+            selector: 'Square_' + screenX.toFixed() + screenY.toFixed()
         };
     }
 
@@ -173,22 +171,92 @@ module FwDemo {
         return { source:AlgCoords(sourceAlg), dest:AlgCoords(destAlg) };
     }
 
+    function ForEachSquareDiv(visitor: (elem:HTMLElement) => void):void {
+        for (var x=0; x < 8; ++x) {
+            for (var y=0; y < 8; ++y) {
+                var id = 'Square_' + x.toFixed() + y.toFixed();
+                var elem = document.getElementById(id);
+                visitor(elem);
+            }
+        }
+    }
+
+    function ClassList(elem:HTMLElement):string[] {
+        if (elem.className) {
+            return elem.className.split(/\s+/g);
+        }
+        return [];
+    }
+
+    function RemoveClass(elem:HTMLElement, classname:string):HTMLElement {
+        //if (elem.classList && elem.classList.remove) {
+        //    elem.classList.remove(classname);
+        //} else {
+            var classlist = ClassList(elem);
+            var updated = [];
+            var found = false;
+            for (var cn of classlist) {
+                if (cn === classname) {
+                    found = true;
+                } else {
+                    updated.push(cn);
+                }
+            }
+            if (found) {
+                elem.className = updated.join(' ');
+            }
+        //}
+        return elem;
+    }
+
+    function AddClass(elem:HTMLElement, classname:string):HTMLElement {
+        //if (elem.classList && elem.classList.add) {
+        //    elem.classList.add(classname);
+        //} else {
+            var classlist = ClassList(elem);
+            var found = false;
+            for (var cn of classlist) {
+                if (cn === classname) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                classlist.push(classname);
+                elem.className = classlist.join(' ');
+            }
+        //}
+        return elem;
+    }
+
+    function HasClass(elem:HTMLElement, classname:string):boolean {
+        for (var cn of ClassList(elem)) {
+            if (cn === classname) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     function SetMoveState(state:MoveStateType) {
         MoveState = state;
 
         // Make all squares unselectable.
-        $('.ChessSquare').removeClass('UserCanSelect');
+        ForEachSquareDiv((div) => RemoveClass(div, 'UserCanSelect'));
+
         let legal:Flywheel.Move[] = TheBoard.LegalMoves();
         if (state === MoveStateType.SelectSource) {
             // Mark all squares that contain a piece the user can move with 'UserCanSelect' class.
             for (let move of legal) {
                 let coords = MoveCoords(move);
-                $(coords.source.selector).addClass('UserCanSelect');
+                let div = document.getElementById(coords.source.selector);
+                AddClass(div, 'UserCanSelect');
             }
         } else if (state == MoveStateType.SelectDest) {
             for (let move of legal) {
                 let coords = MoveCoords(move);
-                $(coords.dest.selector).addClass('UserCanSelect');
+                let div = document.getElementById(coords.source.selector);
+                AddClass(div, 'UserCanSelect');
             }
         }
     }
@@ -196,29 +264,28 @@ module FwDemo {
     function DrawBoard(board:Flywheel.Board):void {
         for (let y=0; y < 8; ++y) {
             let ry = RotateFlag ? (7 - y) : y;
-            $('#RankLabel_' + ry.toFixed()).text('87654321'.charAt(y));
-            $('#FileLabel_' + ry.toFixed()).text('abcdefgh'.charAt(y));
+            document.getElementById('RankLabel_' + ry.toFixed()).textContent = ('87654321'.charAt(y));
+            document.getElementById('FileLabel_' + ry.toFixed()).textContent = ('abcdefgh'.charAt(y));
             for (let x=0; x < 8; ++x) {
                 let rx = RotateFlag ? (7 - x) : x;
                 let sq:Flywheel.Square = board.GetSquareByCoords(x, y);
-                let img:string = MakeImageHtml(sq);
-                let sdiv = $('#Square_' + rx.toString() + ry.toString());
-                sdiv.html(img);
+                let sdiv = document.getElementById('Square_' + rx.toString() + ry.toString());
+                sdiv.innerHTML = MakeImageHtml(sq);
             }
         }
 
         PrevTurnEnabled = board.CanPopMove();
         NextTurnEnabled = (GameHistoryIndex < GameHistory.length);
 
-        $('#PrevTurnButton').prop('src', PrevButtonImage(false));
-        $('#NextTurnButton').prop('src', NextButtonImage(false));
-        $('#PlayPauseStopButton').prop('src', PlayStopImage(false));
+        document.getElementById('PrevTurnButton').setAttribute('src', PrevButtonImage(false));
+        document.getElementById('NextTurnButton').setAttribute('src', NextButtonImage(false));
+        document.getElementById('PlayPauseStopButton').setAttribute('src', PlayStopImage(false));
     }
 
-    let BoardCoords = function(e) {
-        let divOfs = $('#DivBoard').offset();
-        let screenX:number = Math.floor((e.pageX - divOfs.left) / SquarePixels);
-        let screenY:number = Math.floor(8.0 - ((e.pageY - divOfs.top)  / SquarePixels));
+    function BoardCoords(e) {
+        let boardDiv = document.getElementById('DivBoard');
+        let screenX:number = Math.floor((e.pageX - boardDiv.offsetLeft) / SquarePixels);
+        let screenY:number = Math.floor(8.0 - ((e.pageY - boardDiv.offsetTop)  / SquarePixels));
         let chessX:number = RotateFlag ? (7-screenX) : screenX;
         let chessY:number = RotateFlag ? (7-screenY) : screenY;
 
@@ -233,18 +300,18 @@ module FwDemo {
             chessX: chessX,     // chess board coordinates from White's point of view (includes rotation)
             chessY: chessY,
 
-            selector: '#Square_' + screenX.toFixed() + screenY.toFixed()
+            selector: 'Square_' + screenX.toFixed() + screenY.toFixed()
         };
     }
 
     function OnSquareHoverIn() {
-        if ($(this).hasClass('UserCanSelect')) {
-            $(this).addClass('ChessSquareHover');
+        if (HasClass(this, 'UserCanSelect')) {
+            AddClass(this, 'ChessSquareHover');
         }
     }
 
     function OnSquareHoverOut() {
-        $(this).removeClass('ChessSquareHover');
+        RemoveClass(this, 'ChessSquareHover');
     }
 
     function OnSquareClicked(e) {
@@ -252,9 +319,9 @@ module FwDemo {
             let bc = BoardCoords(e);
             if (bc) {
                 if (MoveState === MoveStateType.SelectSource) {
-                    if ($(this).hasClass('UserCanSelect')) {
+                    if (HasClass(this, 'UserCanSelect')) {
                         // Are we selecting source square or destination square?
-                        SourceSquareSelector = '#' + this.id;
+                        SourceSquareSelector = this.id;
                         SetMoveState(MoveStateType.SelectDest);
                     }
                 } else if (MoveState === MoveStateType.SelectDest) {
@@ -263,7 +330,7 @@ module FwDemo {
                     let chosenMove:Flywheel.Move = null;
                     for (let move of legal) {
                         let coords = MoveCoords(move);
-                        if (coords.dest.selector === '#' + this.id) {
+                        if (coords.dest.selector === this.id) {
                             if (coords.source.selector === SourceSquareSelector) {
                                 // !!! FIXFIXFIX - check for pawn promotion, prompt for promotion piece
                                 chosenMove = move;
@@ -302,39 +369,43 @@ module FwDemo {
     }
 
     function InitControls() {
-        var boardDiv = $('#DivBoard');
-        boardDiv.mousedown(function(e){
+        var boardDiv = document.getElementById('DivBoard');
+        boardDiv.onmousedown = function(e){
             if (e.which === 1) {    // left (primary) mouse button
                 let bc = BoardCoords(e);
                 if (bc) {
                     //$(bc.selector).addClass('ChessSquareShadow');
                 }
             }
-        });
+        };
 
         for (let x=0; x < 8; ++x) {
             for (let y=0; y < 8; ++y) {
-                let sq = $('#Square_' + x.toFixed() + y.toFixed());
-                sq.hover(OnSquareHoverIn, OnSquareHoverOut).click(OnSquareClicked);
+                let sq = document.getElementById('Square_' + x.toFixed() + y.toFixed());
+                sq.onmouseover = OnSquareHoverIn;
+                sq.onmouseout = OnSquareHoverOut;
+                sq.onclick = OnSquareClicked;
             }
         }
 
-        var rotateButton = $('#RotateButton');
-        rotateButton.click(function(){
+        var rotateButton = document.getElementById('RotateButton');
+        rotateButton.onclick = function(){
             // click
             RotateFlag = !RotateFlag;
             DrawBoard(TheBoard);
             SetMoveState(MoveState);    // refresh clickable squares
-        }).hover(function(){
-            // hover in
-            rotateButton.prop('src', 'shadow2/loop-circular-8x.png');
-        }, function(){
-            // hover out
-            rotateButton.prop('src', 'shadow1/loop-circular-8x.png');
-        });
+        };
 
-        var prevTurnButton = $('#PrevTurnButton');
-        prevTurnButton.click(function(){
+        rotateButton.onmouseover = function(){
+            rotateButton.setAttribute('src', 'shadow2/loop-circular-8x.png');
+        };
+
+        rotateButton.onmouseout = function(){
+            rotateButton.setAttribute('src', 'shadow1/loop-circular-8x.png');
+        };
+
+        var prevTurnButton = document.getElementById('PrevTurnButton');
+        prevTurnButton.onclick = function(){
             // click
             if (PrevTurnEnabled) {
                 // TODO: Cancel any computer analysis here.
@@ -343,43 +414,48 @@ module FwDemo {
                 DrawBoard(TheBoard);
                 SetMoveState(MoveStateType.SelectSource);
             }
-        }).hover(function(){
-            // hover in
-            prevTurnButton.prop('src', PrevButtonImage(true));
-        },function(){
-            // hover out
-            prevTurnButton.prop('src', PrevButtonImage(false));
-        });
+        };
 
-        var nextTurnButton = $('#NextTurnButton');
-        nextTurnButton.click(function(){
+        prevTurnButton.onmouseover = function(){
+            prevTurnButton.setAttribute('src', PrevButtonImage(true));
+        };
+
+        prevTurnButton.onmouseout = function(){
+            prevTurnButton.setAttribute('src', PrevButtonImage(false));
+        };
+
+        var nextTurnButton = document.getElementById('NextTurnButton');
+        nextTurnButton.onclick = function(){
             // click
             if (NextTurnEnabled) {
                 TheBoard.PushMove(GameHistory[GameHistoryIndex++]);
                 DrawBoard(TheBoard);
                 SetMoveState(MoveStateType.SelectSource);
             }
-        }).hover(function(){
-            // hover in
-            nextTurnButton.prop('src', NextButtonImage(true));
-        },function(){
-            // hover out
-            nextTurnButton.prop('src', NextButtonImage(false));
-        });
+        };
 
-        var playPauseStopButton = $('#PlayPauseStopButton');
-        playPauseStopButton.click(function(){
-            // click
+        nextTurnButton.onmouseover = function(){
+            nextTurnButton.setAttribute('src', NextButtonImage(true));
+        };
+
+        nextTurnButton.onmouseout = function(){
+            nextTurnButton.setAttribute('src', NextButtonImage(false));
+        };
+
+        var playPauseStopButton = document.getElementById('PlayPauseStopButton');
+        playPauseStopButton.onclick = function(){
             if (PlayStopEnabled) {
-
+                // TODO: add code here to initiate AI thinking about the position.
             }
-        }).hover(function(){
-            // hover in
-            playPauseStopButton.prop('src', PlayStopImage(true));
-        },function(){
-            // hover out
-            playPauseStopButton.prop('src', PlayStopImage(false));
-        });
+        };
+
+        playPauseStopButton.onmouseover = function(){
+            playPauseStopButton.setAttribute('src', PlayStopImage(true));
+        };
+
+        playPauseStopButton.onmouseout = function(){
+            playPauseStopButton.setAttribute('src', PlayStopImage(false));
+        };
     }
 
     export function InitPage() {
@@ -390,4 +466,4 @@ module FwDemo {
     }
 }
 
-$(FwDemo.InitPage);
+window.onload = FwDemo.InitPage;

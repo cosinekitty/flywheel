@@ -24,5 +24,8 @@
         "../src/flywheel.ts",
         "./fwui.ts",
         "./jquery.d.ts"
-    ]
+    ],
+    "atom": {
+        "rewriteTsconfig": true
+    }
 }

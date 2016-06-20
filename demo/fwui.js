@@ -1,4 +1,3 @@
-/// <reference path="../src/flywheel.ts"/>
 var FwDemo;
 (function (FwDemo) {
     var MoveStateType;
@@ -151,7 +150,7 @@ var FwDemo;
         for (x = 0; x < 8; ++x) {
             html += MakeRankLabel(x);
         }
-        $('#DivBoard').html(html);
+        document.getElementById('DivBoard').innerHTML = html;
     }
     function AlgCoords(alg) {
         var chessX = 'abcdefgh'.indexOf(alg.charAt(0));
@@ -164,7 +163,7 @@ var FwDemo;
             chessY: chessY,
             screenX: screenX,
             screenY: screenY,
-            selector: '#Square_' + screenX.toFixed() + screenY.toFixed()
+            selector: 'Square_' + screenX.toFixed() + screenY.toFixed()
         };
     }
     function MoveCoords(move) {
@@ -172,50 +171,117 @@ var FwDemo;
         var destAlg = Flywheel.Board.Algebraic(move.dest);
         return { source: AlgCoords(sourceAlg), dest: AlgCoords(destAlg) };
     }
+    function ForEachSquareDiv(visitor) {
+        for (var x = 0; x < 8; ++x) {
+            for (var y = 0; y < 8; ++y) {
+                var id = 'Square_' + x.toFixed() + y.toFixed();
+                var elem = document.getElementById(id);
+                visitor(elem);
+            }
+        }
+    }
+    function ClassList(elem) {
+        if (elem.className) {
+            return elem.className.split(/\s+/g);
+        }
+        return [];
+    }
+    function RemoveClass(elem, classname) {
+        //if (elem.classList && elem.classList.remove) {
+        //    elem.classList.remove(classname);
+        //} else {
+        var classlist = ClassList(elem);
+        var updated = [];
+        var found = false;
+        for (var _i = 0, classlist_1 = classlist; _i < classlist_1.length; _i++) {
+            var cn = classlist_1[_i];
+            if (cn === classname) {
+                found = true;
+            }
+            else {
+                updated.push(cn);
+            }
+        }
+        if (found) {
+            elem.className = updated.join(' ');
+        }
+        //}
+        return elem;
+    }
+    function AddClass(elem, classname) {
+        //if (elem.classList && elem.classList.add) {
+        //    elem.classList.add(classname);
+        //} else {
+        var classlist = ClassList(elem);
+        var found = false;
+        for (var _i = 0, classlist_2 = classlist; _i < classlist_2.length; _i++) {
+            var cn = classlist_2[_i];
+            if (cn === classname) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            classlist.push(classname);
+            elem.className = classlist.join(' ');
+        }
+        //}
+        return elem;
+    }
+    function HasClass(elem, classname) {
+        for (var _i = 0, _a = ClassList(elem); _i < _a.length; _i++) {
+            var cn = _a[_i];
+            if (cn === classname) {
+                return true;
+            }
+        }
+        return false;
+    }
     function SetMoveState(state) {
         MoveState = state;
         // Make all squares unselectable.
-        $('.ChessSquare').removeClass('UserCanSelect');
+        ForEachSquareDiv(function (div) { return RemoveClass(div, 'UserCanSelect'); });
         var legal = TheBoard.LegalMoves();
         if (state === MoveStateType.SelectSource) {
             // Mark all squares that contain a piece the user can move with 'UserCanSelect' class.
-            for (var _i = 0; _i < legal.length; _i++) {
-                var move = legal[_i];
+            for (var _i = 0, legal_1 = legal; _i < legal_1.length; _i++) {
+                var move = legal_1[_i];
                 var coords = MoveCoords(move);
-                $(coords.source.selector).addClass('UserCanSelect');
+                var div = document.getElementById(coords.source.selector);
+                AddClass(div, 'UserCanSelect');
             }
         }
         else if (state == MoveStateType.SelectDest) {
-            for (var _a = 0; _a < legal.length; _a++) {
-                var move = legal[_a];
+            for (var _a = 0, legal_2 = legal; _a < legal_2.length; _a++) {
+                var move = legal_2[_a];
                 var coords = MoveCoords(move);
-                $(coords.dest.selector).addClass('UserCanSelect');
+                var div = document.getElementById(coords.source.selector);
+                AddClass(div, 'UserCanSelect');
             }
         }
     }
     function DrawBoard(board) {
         for (var y = 0; y < 8; ++y) {
             var ry = RotateFlag ? (7 - y) : y;
-            $('#RankLabel_' + ry.toFixed()).text('87654321'.charAt(y));
-            $('#FileLabel_' + ry.toFixed()).text('abcdefgh'.charAt(y));
+            document.getElementById('RankLabel_' + ry.toFixed()).textContent = ('87654321'.charAt(y));
+            document.getElementById('FileLabel_' + ry.toFixed()).textContent = ('abcdefgh'.charAt(y));
             for (var x = 0; x < 8; ++x) {
                 var rx = RotateFlag ? (7 - x) : x;
                 var sq = board.GetSquareByCoords(x, y);
-                var img = MakeImageHtml(sq);
-                var sdiv = $('#Square_' + rx.toString() + ry.toString());
-                sdiv.html(img);
+                var sdiv = document.getElementById('Square_' + rx.toString() + ry.toString());
+                sdiv.innerHTML = MakeImageHtml(sq);
             }
         }
         PrevTurnEnabled = board.CanPopMove();
         NextTurnEnabled = (GameHistoryIndex < GameHistory.length);
-        $('#PrevTurnButton').prop('src', PrevButtonImage(false));
-        $('#NextTurnButton').prop('src', NextButtonImage(false));
-        $('#PlayPauseStopButton').prop('src', PlayStopImage(false));
+        document.getElementById('PrevTurnButton').setAttribute('src', PrevButtonImage(false));
+        document.getElementById('NextTurnButton').setAttribute('src', NextButtonImage(false));
+        document.getElementById('PlayPauseStopButton').setAttribute('src', PlayStopImage(false));
     }
-    var BoardCoords = function (e) {
-        var divOfs = $('#DivBoard').offset();
-        var screenX = Math.floor((e.pageX - divOfs.left) / SquarePixels);
-        var screenY = Math.floor(8.0 - ((e.pageY - divOfs.top) / SquarePixels));
+    function BoardCoords(e) {
+        var boardDiv = document.getElementById('DivBoard');
+        var screenX = Math.floor((e.pageX - boardDiv.offsetLeft) / SquarePixels);
+        var screenY = Math.floor(8.0 - ((e.pageY - boardDiv.offsetTop) / SquarePixels));
         var chessX = RotateFlag ? (7 - screenX) : screenX;
         var chessY = RotateFlag ? (7 - screenY) : screenY;
         if (chessX < 0 || chessX > 7 || chessY < 0 || chessY > 7) {
@@ -226,25 +292,25 @@ var FwDemo;
             screenY: screenY,
             chessX: chessX,
             chessY: chessY,
-            selector: '#Square_' + screenX.toFixed() + screenY.toFixed()
+            selector: 'Square_' + screenX.toFixed() + screenY.toFixed()
         };
-    };
+    }
     function OnSquareHoverIn() {
-        if ($(this).hasClass('UserCanSelect')) {
-            $(this).addClass('ChessSquareHover');
+        if (HasClass(this, 'UserCanSelect')) {
+            AddClass(this, 'ChessSquareHover');
         }
     }
     function OnSquareHoverOut() {
-        $(this).removeClass('ChessSquareHover');
+        RemoveClass(this, 'ChessSquareHover');
     }
     function OnSquareClicked(e) {
         if (e.which === 1) {
             var bc = BoardCoords(e);
             if (bc) {
                 if (MoveState === MoveStateType.SelectSource) {
-                    if ($(this).hasClass('UserCanSelect')) {
+                    if (HasClass(this, 'UserCanSelect')) {
                         // Are we selecting source square or destination square?
-                        SourceSquareSelector = '#' + this.id;
+                        SourceSquareSelector = this.id;
                         SetMoveState(MoveStateType.SelectDest);
                     }
                 }
@@ -252,10 +318,10 @@ var FwDemo;
                     // Find matching (source,dest) pair in legal move list, make move on board, redraw board.
                     var legal = TheBoard.LegalMoves();
                     var chosenMove = null;
-                    for (var _i = 0; _i < legal.length; _i++) {
-                        var move = legal[_i];
+                    for (var _i = 0, legal_3 = legal; _i < legal_3.length; _i++) {
+                        var move = legal_3[_i];
                         var coords = MoveCoords(move);
-                        if (coords.dest.selector === '#' + this.id) {
+                        if (coords.dest.selector === this.id) {
                             if (coords.source.selector === SourceSquareSelector) {
                                 // !!! FIXFIXFIX - check for pawn promotion, prompt for promotion piece
                                 chosenMove = move;
@@ -294,35 +360,37 @@ var FwDemo;
         }
     }
     function InitControls() {
-        var boardDiv = $('#DivBoard');
-        boardDiv.mousedown(function (e) {
+        var boardDiv = document.getElementById('DivBoard');
+        boardDiv.onmousedown = function (e) {
             if (e.which === 1) {
                 var bc = BoardCoords(e);
                 if (bc) {
                 }
             }
-        });
+        };
         for (var x = 0; x < 8; ++x) {
             for (var y = 0; y < 8; ++y) {
-                var sq = $('#Square_' + x.toFixed() + y.toFixed());
-                sq.hover(OnSquareHoverIn, OnSquareHoverOut).click(OnSquareClicked);
+                var sq = document.getElementById('Square_' + x.toFixed() + y.toFixed());
+                sq.onmouseover = OnSquareHoverIn;
+                sq.onmouseout = OnSquareHoverOut;
+                sq.onclick = OnSquareClicked;
             }
         }
-        var rotateButton = $('#RotateButton');
-        rotateButton.click(function () {
+        var rotateButton = document.getElementById('RotateButton');
+        rotateButton.onclick = function () {
             // click
             RotateFlag = !RotateFlag;
             DrawBoard(TheBoard);
             SetMoveState(MoveState); // refresh clickable squares
-        }).hover(function () {
-            // hover in
-            rotateButton.prop('src', 'shadow2/loop-circular-8x.png');
-        }, function () {
-            // hover out
-            rotateButton.prop('src', 'shadow1/loop-circular-8x.png');
-        });
-        var prevTurnButton = $('#PrevTurnButton');
-        prevTurnButton.click(function () {
+        };
+        rotateButton.onmouseover = function () {
+            rotateButton.setAttribute('src', 'shadow2/loop-circular-8x.png');
+        };
+        rotateButton.onmouseout = function () {
+            rotateButton.setAttribute('src', 'shadow1/loop-circular-8x.png');
+        };
+        var prevTurnButton = document.getElementById('PrevTurnButton');
+        prevTurnButton.onclick = function () {
             // click
             if (PrevTurnEnabled) {
                 // TODO: Cancel any computer analysis here.
@@ -331,40 +399,39 @@ var FwDemo;
                 DrawBoard(TheBoard);
                 SetMoveState(MoveStateType.SelectSource);
             }
-        }).hover(function () {
-            // hover in
-            prevTurnButton.prop('src', PrevButtonImage(true));
-        }, function () {
-            // hover out
-            prevTurnButton.prop('src', PrevButtonImage(false));
-        });
-        var nextTurnButton = $('#NextTurnButton');
-        nextTurnButton.click(function () {
+        };
+        prevTurnButton.onmouseover = function () {
+            prevTurnButton.setAttribute('src', PrevButtonImage(true));
+        };
+        prevTurnButton.onmouseout = function () {
+            prevTurnButton.setAttribute('src', PrevButtonImage(false));
+        };
+        var nextTurnButton = document.getElementById('NextTurnButton');
+        nextTurnButton.onclick = function () {
             // click
             if (NextTurnEnabled) {
                 TheBoard.PushMove(GameHistory[GameHistoryIndex++]);
                 DrawBoard(TheBoard);
                 SetMoveState(MoveStateType.SelectSource);
             }
-        }).hover(function () {
-            // hover in
-            nextTurnButton.prop('src', NextButtonImage(true));
-        }, function () {
-            // hover out
-            nextTurnButton.prop('src', NextButtonImage(false));
-        });
-        var playPauseStopButton = $('#PlayPauseStopButton');
-        playPauseStopButton.click(function () {
-            // click
+        };
+        nextTurnButton.onmouseover = function () {
+            nextTurnButton.setAttribute('src', NextButtonImage(true));
+        };
+        nextTurnButton.onmouseout = function () {
+            nextTurnButton.setAttribute('src', NextButtonImage(false));
+        };
+        var playPauseStopButton = document.getElementById('PlayPauseStopButton');
+        playPauseStopButton.onclick = function () {
             if (PlayStopEnabled) {
             }
-        }).hover(function () {
-            // hover in
-            playPauseStopButton.prop('src', PlayStopImage(true));
-        }, function () {
-            // hover out
-            playPauseStopButton.prop('src', PlayStopImage(false));
-        });
+        };
+        playPauseStopButton.onmouseover = function () {
+            playPauseStopButton.setAttribute('src', PlayStopImage(true));
+        };
+        playPauseStopButton.onmouseout = function () {
+            playPauseStopButton.setAttribute('src', PlayStopImage(false));
+        };
     }
     function InitPage() {
         InitBoardDisplay();
@@ -374,4 +441,4 @@ var FwDemo;
     }
     FwDemo.InitPage = InitPage;
 })(FwDemo || (FwDemo = {}));
-$(FwDemo.InitPage);
+window.onload = FwDemo.InitPage;
