@@ -255,8 +255,10 @@ var FwDemo;
             for (var _a = 0, legal_2 = legal; _a < legal_2.length; _a++) {
                 var move = legal_2[_a];
                 var coords = MoveCoords(move);
-                var div = document.getElementById(coords.source.selector);
-                AddClass(div, 'UserCanSelect');
+                if (coords.source.selector === SourceSquareSelector) {
+                    var div = document.getElementById(coords.dest.selector);
+                    AddClass(div, 'UserCanSelect');
+                }
             }
         }
     }

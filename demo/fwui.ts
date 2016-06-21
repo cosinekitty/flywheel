@@ -255,8 +255,10 @@ module FwDemo {
         } else if (state == MoveStateType.SelectDest) {
             for (let move of legal) {
                 let coords = MoveCoords(move);
-                let div = document.getElementById(coords.source.selector);
-                AddClass(div, 'UserCanSelect');
+                if (coords.source.selector === SourceSquareSelector) {
+                    let div = document.getElementById(coords.dest.selector);
+                    AddClass(div, 'UserCanSelect');
+                }
             }
         }
     }
