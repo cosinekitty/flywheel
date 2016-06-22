@@ -117,8 +117,14 @@ var FwDemo;
             (SquarePixels * y + (SquarePixels >> 1) - 7).toFixed() + 'px;' +
             '">y</div>';
     }
+    function SquareSelector(x, y) {
+        return 'Square_' + x.toFixed() + y.toFixed();
+    }
+    function SquareDiv(x, y) {
+        return document.getElementById(SquareSelector(x, y));
+    }
     function MakeImageContainer(x, y) {
-        return '<div id="Square_' + x.toString() + y.toString() + '"' +
+        return '<div id="' + SquareSelector(x, y) + '"' +
             ' class="ChessSquare"' +
             ' style="position:absolute; left:' +
             (SquarePixels * x).toFixed() + 'px; top:' +
@@ -164,7 +170,7 @@ var FwDemo;
             chessY: chessY,
             screenX: screenX,
             screenY: screenY,
-            selector: 'Square_' + screenX.toFixed() + screenY.toFixed()
+            selector: SquareSelector(screenX, screenY),
         };
     }
     function MoveCoords(move) {
@@ -175,9 +181,7 @@ var FwDemo;
     function ForEachSquareDiv(visitor) {
         for (var x = 0; x < 8; ++x) {
             for (var y = 0; y < 8; ++y) {
-                var id = 'Square_' + x.toFixed() + y.toFixed();
-                var elem = document.getElementById(id);
-                visitor(elem);
+                visitor(SquareDiv(x, y));
             }
         }
     }
@@ -188,9 +192,6 @@ var FwDemo;
         return [];
     }
     function RemoveClass(elem, classname) {
-        //if (elem.classList && elem.classList.remove) {
-        //    elem.classList.remove(classname);
-        //} else {
         var classlist = ClassList(elem);
         var updated = [];
         var found = false;
@@ -206,13 +207,9 @@ var FwDemo;
         if (found) {
             elem.className = updated.join(' ');
         }
-        //}
         return elem;
     }
     function AddClass(elem, classname) {
-        //if (elem.classList && elem.classList.add) {
-        //    elem.classList.add(classname);
-        //} else {
         var classlist = ClassList(elem);
         var found = false;
         for (var _i = 0, classlist_2 = classlist; _i < classlist_2.length; _i++) {
@@ -226,7 +223,6 @@ var FwDemo;
             classlist.push(classname);
             elem.className = classlist.join(' ');
         }
-        //}
         return elem;
     }
     function HasClass(elem, classname) {
@@ -272,7 +268,7 @@ var FwDemo;
             for (var x = 0; x < 8; ++x) {
                 var rx = RotateFlag ? (7 - x) : x;
                 var sq = board.GetSquareByCoords(x, y);
-                var sdiv = document.getElementById('Square_' + rx.toString() + ry.toString());
+                var sdiv = SquareDiv(rx, ry);
                 sdiv.innerHTML = MakeImageHtml(sq);
             }
         }
@@ -291,7 +287,7 @@ var FwDemo;
         if (chessX < 0 || chessX > 7 || chessY < 0 || chessY > 7) {
             return null; // outside the board
         }
-        var selector = 'Square_' + screenX.toFixed() + screenY.toFixed();
+        var selector = SquareSelector(screenX, screenY);
         return {
             screenX: screenX,
             screenY: screenY,
@@ -313,9 +309,9 @@ var FwDemo;
     }
     function OnSquareMouseDown(e) {
         if (e.which === 1) {
-            var bc = BoardCoords(e);
-            if (bc) {
-                if (MoveState === MoveStateType.SelectSource) {
+            if (MoveState === MoveStateType.SelectSource) {
+                var bc = BoardCoords(e);
+                if (bc) {
                     if (HasClass(bc.squareDiv, 'UserCanSelect')) {
                         SetMoveState(MoveStateType.SelectDest, bc);
                     }
@@ -384,7 +380,7 @@ var FwDemo;
         boardDiv.onmouseup = OnSquareMouseUp;
         for (var x = 0; x < 8; ++x) {
             for (var y = 0; y < 8; ++y) {
-                var sq = document.getElementById('Square_' + x.toFixed() + y.toFixed());
+                var sq = SquareDiv(x, y);
                 sq.onmouseover = OnSquareHoverIn;
                 sq.onmouseout = OnSquareHoverOut;
             }

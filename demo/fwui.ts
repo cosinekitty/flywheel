@@ -107,8 +107,16 @@ module FwDemo {
             '">y</div>';
     }
 
+    function SquareSelector(x:number, y:number):string {
+        return 'Square_' + x.toFixed() + y.toFixed();
+    }
+
+    function SquareDiv(x:number, y:number):HTMLElement {
+        return document.getElementById(SquareSelector(x, y));
+    }
+
     function MakeImageContainer(x:number, y:number) {
-        return '<div id="Square_' + x.toString() + y.toString() + '"' +
+        return '<div id="' + SquareSelector(x,y) + '"' +
             ' class="ChessSquare"' +
             ' style="position:absolute; left:' +
             (SquarePixels * x).toFixed() + 'px; top:' +
@@ -163,7 +171,7 @@ module FwDemo {
             chessY: chessY,
             screenX: screenX,
             screenY: screenY,
-            selector: 'Square_' + screenX.toFixed() + screenY.toFixed()
+            selector: SquareSelector(screenX, screenY),
         };
     }
 
@@ -176,9 +184,7 @@ module FwDemo {
     function ForEachSquareDiv(visitor: (elem:HTMLElement) => void):void {
         for (var x=0; x < 8; ++x) {
             for (var y=0; y < 8; ++y) {
-                var id = 'Square_' + x.toFixed() + y.toFixed();
-                var elem = document.getElementById(id);
-                visitor(elem);
+                visitor(SquareDiv(x, y));
             }
         }
     }
@@ -191,43 +197,35 @@ module FwDemo {
     }
 
     function RemoveClass(elem:HTMLElement, classname:string):HTMLElement {
-        //if (elem.classList && elem.classList.remove) {
-        //    elem.classList.remove(classname);
-        //} else {
-            var classlist = ClassList(elem);
-            var updated = [];
-            var found = false;
-            for (var cn of classlist) {
-                if (cn === classname) {
-                    found = true;
-                } else {
-                    updated.push(cn);
-                }
+        var classlist = ClassList(elem);
+        var updated = [];
+        var found = false;
+        for (var cn of classlist) {
+            if (cn === classname) {
+                found = true;
+            } else {
+                updated.push(cn);
             }
-            if (found) {
-                elem.className = updated.join(' ');
-            }
-        //}
+        }
+        if (found) {
+            elem.className = updated.join(' ');
+        }
         return elem;
     }
 
     function AddClass(elem:HTMLElement, classname:string):HTMLElement {
-        //if (elem.classList && elem.classList.add) {
-        //    elem.classList.add(classname);
-        //} else {
-            var classlist = ClassList(elem);
-            var found = false;
-            for (var cn of classlist) {
-                if (cn === classname) {
-                    found = true;
-                    break;
-                }
+        var classlist = ClassList(elem);
+        var found = false;
+        for (var cn of classlist) {
+            if (cn === classname) {
+                found = true;
+                break;
             }
-            if (!found) {
-                classlist.push(classname);
-                elem.className = classlist.join(' ');
-            }
-        //}
+        }
+        if (!found) {
+            classlist.push(classname);
+            elem.className = classlist.join(' ');
+        }
         return elem;
     }
 
@@ -274,7 +272,7 @@ module FwDemo {
             for (let x=0; x < 8; ++x) {
                 let rx = RotateFlag ? (7 - x) : x;
                 let sq:Flywheel.Square = board.GetSquareByCoords(x, y);
-                let sdiv = document.getElementById('Square_' + rx.toString() + ry.toString());
+                let sdiv = SquareDiv(rx, ry);
                 sdiv.innerHTML = MakeImageHtml(sq);
             }
         }
@@ -298,7 +296,7 @@ module FwDemo {
             return null;    // outside the board
         }
 
-        let selector:string = 'Square_' + screenX.toFixed() + screenY.toFixed();
+        let selector:string = SquareSelector(screenX, screenY);
 
         return {
             screenX: screenX,   // cartesian square coordinates as seen on the screen
@@ -325,12 +323,11 @@ module FwDemo {
         RemoveClass(this, 'ChessSquareHover');
     }
 
-
     function OnSquareMouseDown(e) {
         if (e.which === 1) {        // primary mouse button
-            let bc = BoardCoords(e);
-            if (bc) {
-                if (MoveState === MoveStateType.SelectSource) {
+            if (MoveState === MoveStateType.SelectSource) {
+                let bc = BoardCoords(e);
+                if (bc) {
                     if (HasClass(bc.squareDiv, 'UserCanSelect')) {
                         SetMoveState(MoveStateType.SelectDest, bc);
                     }
@@ -401,7 +398,7 @@ module FwDemo {
 
         for (let x=0; x < 8; ++x) {
             for (let y=0; y < 8; ++y) {
-                let sq = document.getElementById('Square_' + x.toFixed() + y.toFixed());
+                let sq = SquareDiv(x, y);
                 sq.onmouseover = OnSquareHoverIn;
                 sq.onmouseout = OnSquareHoverOut;
             }
