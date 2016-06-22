@@ -1,4 +1,6 @@
 module FwDemo {
+    'use strict';
+
     enum MoveStateType {
         OpponentTurn,   // not user's turn (computer's turn)
         SelectSource,
@@ -17,7 +19,7 @@ module FwDemo {
     var TheBoard:Flywheel.Board = new Flywheel.Board();
     var RotateFlag:boolean = false;
     var MoveState:MoveStateType = MoveStateType.SelectSource;
-    var SourceSquareSelector:string = null;
+    var SourceSquareInfo;
     var BgDark = '#8FA679';
     var BgPale = '#D4CEA3';
     var PrevTurnEnabled:boolean = false;
@@ -238,7 +240,8 @@ module FwDemo {
         return false;
     }
 
-    function SetMoveState(state:MoveStateType) {
+    function SetMoveState(state:MoveStateType, sourceInfo?) {
+        SourceSquareInfo = sourceInfo;
         MoveState = state;
 
         // Make all squares unselectable.
@@ -255,7 +258,7 @@ module FwDemo {
         } else if (state == MoveStateType.SelectDest) {
             for (let move of legal) {
                 let coords = MoveCoords(move);
-                if (coords.source.selector === SourceSquareSelector) {
+                if (coords.source.selector === SourceSquareInfo.selector) {
                     let div = document.getElementById(coords.dest.selector);
                     AddClass(div, 'UserCanSelect');
                 }
@@ -295,6 +298,8 @@ module FwDemo {
             return null;    // outside the board
         }
 
+        let selector:string = 'Square_' + screenX.toFixed() + screenY.toFixed();
+
         return {
             screenX: screenX,   // cartesian square coordinates as seen on the screen
             screenY: screenY,
@@ -302,7 +307,11 @@ module FwDemo {
             chessX: chessX,     // chess board coordinates from White's point of view (includes rotation)
             chessY: chessY,
 
-            selector: 'Square_' + screenX.toFixed() + screenY.toFixed()
+            pageX: e.pageX,     // original mouse coordinates
+            pageY: e.pageY,
+
+            selector: selector,
+            squareDiv: document.getElementById(selector),
         };
     }
 
@@ -316,25 +325,42 @@ module FwDemo {
         RemoveClass(this, 'ChessSquareHover');
     }
 
-    function OnSquareClicked(e) {
+
+    function OnSquareMouseDown(e) {
         if (e.which === 1) {        // primary mouse button
             let bc = BoardCoords(e);
             if (bc) {
                 if (MoveState === MoveStateType.SelectSource) {
-                    if (HasClass(this, 'UserCanSelect')) {
-                        // Are we selecting source square or destination square?
-                        SourceSquareSelector = this.id;
-                        SetMoveState(MoveStateType.SelectDest);
+                    if (HasClass(bc.squareDiv, 'UserCanSelect')) {
+                        SetMoveState(MoveStateType.SelectDest, bc);
                     }
-                } else if (MoveState === MoveStateType.SelectDest) {
+                }
+            }
+        }
+    }
+
+    function OnSquareMouseUp(e) {
+        if (e.which === 1) {        // primary mouse button
+            let bc = BoardCoords(e);
+            if (bc) {
+                if (MoveState === MoveStateType.SelectDest) {
+                    // Support two styles of moving chess pieces:
+                    // 1. Dragging pieces from source square to target square.
+                    // 2. Clicking on source square, then clicking on target square.
+                    // If the mouse lifts up in the same square as it went down,
+                    // and the mouse has never left that square, treat it as style #2.
+                    if (SourceSquareInfo.selector === bc.selector) {
+                        return;     // remain in SelectDest state
+                    }
+
                     // Find matching (source,dest) pair in legal move list, make move on board, redraw board.
                     let legal:Flywheel.Move[] = TheBoard.LegalMoves();
                     let chosenMove:Flywheel.Move = null;
                     for (let move of legal) {
                         let coords = MoveCoords(move);
-                        if (coords.dest.selector === this.id) {
-                            if (coords.source.selector === SourceSquareSelector) {
-                                // !!! FIXFIXFIX - check for pawn promotion, prompt for promotion piece
+                        if (coords.dest.selector === bc.selector) {
+                            if (coords.source.selector === SourceSquareInfo.selector) {
+                                // !!! FIXFIXFIX - check for pawn promotion, prompt for promotion piece (make a list of such moves?)
                                 chosenMove = move;
                             }
                         }
@@ -363,8 +389,6 @@ module FwDemo {
                         // Not a valid move, so cancel the current move and start over.
                         SetMoveState(MoveStateType.SelectSource);
                     }
-                } else {
-                    // Move state does not allow clicking on squares
                 }
             }
         }
@@ -372,30 +396,22 @@ module FwDemo {
 
     function InitControls() {
         var boardDiv = document.getElementById('DivBoard');
-        boardDiv.onmousedown = function(e){
-            if (e.which === 1) {    // left (primary) mouse button
-                let bc = BoardCoords(e);
-                if (bc) {
-                    //$(bc.selector).addClass('ChessSquareShadow');
-                }
-            }
-        };
+        boardDiv.onmousedown = OnSquareMouseDown;
+        boardDiv.onmouseup = OnSquareMouseUp;
 
         for (let x=0; x < 8; ++x) {
             for (let y=0; y < 8; ++y) {
                 let sq = document.getElementById('Square_' + x.toFixed() + y.toFixed());
                 sq.onmouseover = OnSquareHoverIn;
                 sq.onmouseout = OnSquareHoverOut;
-                sq.onclick = OnSquareClicked;
             }
         }
 
         var rotateButton = document.getElementById('RotateButton');
         rotateButton.onclick = function(){
-            // click
             RotateFlag = !RotateFlag;
             DrawBoard(TheBoard);
-            SetMoveState(MoveState);    // refresh clickable squares
+            SetMoveState(MoveStateType.SelectSource);   // refresh clickable squares after rotation, and start move over (too complicated otherwise)
         };
 
         rotateButton.onmouseover = function(){

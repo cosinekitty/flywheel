@@ -1,5 +1,6 @@
 var FwDemo;
 (function (FwDemo) {
+    'use strict';
     var MoveStateType;
     (function (MoveStateType) {
         MoveStateType[MoveStateType["OpponentTurn"] = 0] = "OpponentTurn";
@@ -19,7 +20,7 @@ var FwDemo;
     var TheBoard = new Flywheel.Board();
     var RotateFlag = false;
     var MoveState = MoveStateType.SelectSource;
-    var SourceSquareSelector = null;
+    var SourceSquareInfo;
     var BgDark = '#8FA679';
     var BgPale = '#D4CEA3';
     var PrevTurnEnabled = false;
@@ -237,7 +238,8 @@ var FwDemo;
         }
         return false;
     }
-    function SetMoveState(state) {
+    function SetMoveState(state, sourceInfo) {
+        SourceSquareInfo = sourceInfo;
         MoveState = state;
         // Make all squares unselectable.
         ForEachSquareDiv(function (div) { return RemoveClass(div, 'UserCanSelect'); });
@@ -255,7 +257,7 @@ var FwDemo;
             for (var _a = 0, legal_2 = legal; _a < legal_2.length; _a++) {
                 var move = legal_2[_a];
                 var coords = MoveCoords(move);
-                if (coords.source.selector === SourceSquareSelector) {
+                if (coords.source.selector === SourceSquareInfo.selector) {
                     var div = document.getElementById(coords.dest.selector);
                     AddClass(div, 'UserCanSelect');
                 }
@@ -289,12 +291,16 @@ var FwDemo;
         if (chessX < 0 || chessX > 7 || chessY < 0 || chessY > 7) {
             return null; // outside the board
         }
+        var selector = 'Square_' + screenX.toFixed() + screenY.toFixed();
         return {
             screenX: screenX,
             screenY: screenY,
             chessX: chessX,
             chessY: chessY,
-            selector: 'Square_' + screenX.toFixed() + screenY.toFixed()
+            pageX: e.pageX,
+            pageY: e.pageY,
+            selector: selector,
+            squareDiv: document.getElementById(selector),
         };
     }
     function OnSquareHoverIn() {
@@ -305,27 +311,40 @@ var FwDemo;
     function OnSquareHoverOut() {
         RemoveClass(this, 'ChessSquareHover');
     }
-    function OnSquareClicked(e) {
+    function OnSquareMouseDown(e) {
         if (e.which === 1) {
             var bc = BoardCoords(e);
             if (bc) {
                 if (MoveState === MoveStateType.SelectSource) {
-                    if (HasClass(this, 'UserCanSelect')) {
-                        // Are we selecting source square or destination square?
-                        SourceSquareSelector = this.id;
-                        SetMoveState(MoveStateType.SelectDest);
+                    if (HasClass(bc.squareDiv, 'UserCanSelect')) {
+                        SetMoveState(MoveStateType.SelectDest, bc);
                     }
                 }
-                else if (MoveState === MoveStateType.SelectDest) {
+            }
+        }
+    }
+    function OnSquareMouseUp(e) {
+        if (e.which === 1) {
+            var bc = BoardCoords(e);
+            if (bc) {
+                if (MoveState === MoveStateType.SelectDest) {
+                    // Support two styles of moving chess pieces:
+                    // 1. Dragging pieces from source square to target square.
+                    // 2. Clicking on source square, then clicking on target square.
+                    // If the mouse lifts up in the same square as it went down,
+                    // and the mouse has never left that square, treat it as style #2.
+                    if (SourceSquareInfo.selector === bc.selector) {
+                        return; // remain in SelectDest state
+                    }
                     // Find matching (source,dest) pair in legal move list, make move on board, redraw board.
                     var legal = TheBoard.LegalMoves();
                     var chosenMove = null;
                     for (var _i = 0, legal_3 = legal; _i < legal_3.length; _i++) {
                         var move = legal_3[_i];
                         var coords = MoveCoords(move);
-                        if (coords.dest.selector === this.id) {
-                            if (coords.source.selector === SourceSquareSelector) {
-                                // !!! FIXFIXFIX - check for pawn promotion, prompt for promotion piece
+                        if (coords.dest.selector === bc.selector) {
+                            if (coords.source.selector === SourceSquareInfo.selector) {
+                                // !!! FIXFIXFIX - check for pawn promotion, prompt for promotion piece (make a list of such moves?)
                                 chosenMove = move;
                             }
                         }
@@ -356,34 +375,25 @@ var FwDemo;
                         SetMoveState(MoveStateType.SelectSource);
                     }
                 }
-                else {
-                }
             }
         }
     }
     function InitControls() {
         var boardDiv = document.getElementById('DivBoard');
-        boardDiv.onmousedown = function (e) {
-            if (e.which === 1) {
-                var bc = BoardCoords(e);
-                if (bc) {
-                }
-            }
-        };
+        boardDiv.onmousedown = OnSquareMouseDown;
+        boardDiv.onmouseup = OnSquareMouseUp;
         for (var x = 0; x < 8; ++x) {
             for (var y = 0; y < 8; ++y) {
                 var sq = document.getElementById('Square_' + x.toFixed() + y.toFixed());
                 sq.onmouseover = OnSquareHoverIn;
                 sq.onmouseout = OnSquareHoverOut;
-                sq.onclick = OnSquareClicked;
             }
         }
         var rotateButton = document.getElementById('RotateButton');
         rotateButton.onclick = function () {
-            // click
             RotateFlag = !RotateFlag;
             DrawBoard(TheBoard);
-            SetMoveState(MoveState); // refresh clickable squares
+            SetMoveState(MoveStateType.SelectSource); // refresh clickable squares after rotation, and start move over (too complicated otherwise)
         };
         rotateButton.onmouseover = function () {
             rotateButton.setAttribute('src', 'shadow2/loop-circular-8x.png');
