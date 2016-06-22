@@ -1,6 +1,6 @@
 ## Flywheel - An HTML5/Javascript chess engine
 
-[![Vanilla JS](vanilla-js-button.png)](http://vanilla-js.com/) Flywheel is a pure Javascript chess engine (still in development).
+Flywheel is a pure Javascript chess engine (still in development).
 
 ## Design goals
 
@@ -10,7 +10,7 @@
   * Can decrease strength so weaker players can beat it.
 * Also enables creating chess-related HTML5 apps that don't play chess, but just need to know about chess rules.
 * No built-in user interface - can be adapted to any UI you want.
-* No dependencies on other Javascript libraries (pure Javascript/HTML5).
+* No dependencies on other Javascript libraries (pure Javascript/HTML5). [![Vanilla JS](vanilla-js-button.png)](http://vanilla-js.com/)
 * Fully understands all rules of chess.
   * Generates a list of all legal moves for any chess position.
   * Verifies whether an externally-supplied move is legal or not.
