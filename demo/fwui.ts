@@ -26,6 +26,7 @@ module FwDemo {
     var NextTurnEnabled:boolean = false;
     var PlayStopEnabled:boolean = false;
     var PlayStopState:PlayStopStateType = PlayStopStateType.Play;
+    var BoardDiv;
 
     // The chess board stores the history, but we need to be able to redo
     // moves that have been undone.
@@ -238,9 +239,9 @@ module FwDemo {
         return false;
     }
 
-    function SetMoveState(state:MoveStateType, sourceInfo?) {
-        SourceSquareInfo = sourceInfo;
+    function SetMoveState(state:MoveStateType, sourceInfo?):void {
         MoveState = state;
+        SourceSquareInfo = sourceInfo;
 
         // Make all squares unselectable.
         ForEachSquareDiv((div) => RemoveClass(div, 'UserCanSelect'));
@@ -286,9 +287,8 @@ module FwDemo {
     }
 
     function BoardCoords(e) {
-        let boardDiv = document.getElementById('DivBoard');
-        let screenX:number = Math.floor((e.pageX - boardDiv.offsetLeft) / SquarePixels);
-        let screenY:number = Math.floor(8.0 - ((e.pageY - boardDiv.offsetTop)  / SquarePixels));
+        let screenX:number = Math.floor((e.pageX - BoardDiv.offsetLeft) / SquarePixels);
+        let screenY:number = Math.floor(8.0 - ((e.pageY - BoardDiv.offsetTop)  / SquarePixels));
         let chessX:number = RotateFlag ? (7-screenX) : screenX;
         let chessY:number = RotateFlag ? (7-screenY) : screenY;
 
@@ -392,9 +392,8 @@ module FwDemo {
     }
 
     function InitControls() {
-        var boardDiv = document.getElementById('DivBoard');
-        boardDiv.onmousedown = OnSquareMouseDown;
-        boardDiv.onmouseup = OnSquareMouseUp;
+        BoardDiv.onmousedown = OnSquareMouseDown;
+        BoardDiv.onmouseup = OnSquareMouseUp;
 
         for (let x=0; x < 8; ++x) {
             for (let y=0; y < 8; ++y) {
@@ -474,6 +473,7 @@ module FwDemo {
     }
 
     export function InitPage() {
+        BoardDiv = document.getElementById('DivBoard');
         InitBoardDisplay();
         DrawBoard(TheBoard);
         InitControls();

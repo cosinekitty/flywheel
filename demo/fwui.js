@@ -27,6 +27,7 @@ var FwDemo;
     var NextTurnEnabled = false;
     var PlayStopEnabled = false;
     var PlayStopState = PlayStopStateType.Play;
+    var BoardDiv;
     // The chess board stores the history, but we need to be able to redo
     // moves that have been undone.
     var GameHistory = [];
@@ -235,8 +236,8 @@ var FwDemo;
         return false;
     }
     function SetMoveState(state, sourceInfo) {
-        SourceSquareInfo = sourceInfo;
         MoveState = state;
+        SourceSquareInfo = sourceInfo;
         // Make all squares unselectable.
         ForEachSquareDiv(function (div) { return RemoveClass(div, 'UserCanSelect'); });
         var legal = TheBoard.LegalMoves();
@@ -279,9 +280,8 @@ var FwDemo;
         document.getElementById('PlayPauseStopButton').setAttribute('src', PlayStopImage(false));
     }
     function BoardCoords(e) {
-        var boardDiv = document.getElementById('DivBoard');
-        var screenX = Math.floor((e.pageX - boardDiv.offsetLeft) / SquarePixels);
-        var screenY = Math.floor(8.0 - ((e.pageY - boardDiv.offsetTop) / SquarePixels));
+        var screenX = Math.floor((e.pageX - BoardDiv.offsetLeft) / SquarePixels);
+        var screenY = Math.floor(8.0 - ((e.pageY - BoardDiv.offsetTop) / SquarePixels));
         var chessX = RotateFlag ? (7 - screenX) : screenX;
         var chessY = RotateFlag ? (7 - screenY) : screenY;
         if (chessX < 0 || chessX > 7 || chessY < 0 || chessY > 7) {
@@ -375,9 +375,8 @@ var FwDemo;
         }
     }
     function InitControls() {
-        var boardDiv = document.getElementById('DivBoard');
-        boardDiv.onmousedown = OnSquareMouseDown;
-        boardDiv.onmouseup = OnSquareMouseUp;
+        BoardDiv.onmousedown = OnSquareMouseDown;
+        BoardDiv.onmouseup = OnSquareMouseUp;
         for (var x = 0; x < 8; ++x) {
             for (var y = 0; y < 8; ++y) {
                 var sq = SquareDiv(x, y);
@@ -442,6 +441,7 @@ var FwDemo;
         };
     }
     function InitPage() {
+        BoardDiv = document.getElementById('DivBoard');
         InitBoardDisplay();
         DrawBoard(TheBoard);
         InitControls();
