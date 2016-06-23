@@ -135,6 +135,10 @@ var FwDemo;
             ' height: ' + SquarePixels + 'px; ' +
             '"></div>';
     }
+    function MakeSpriteContainer() {
+        return '<div id="DivMoveSprite" style="z-index:1; width:' + SquarePixels + 'px; height:' + SquarePixels + 'px; ' +
+            'position:absolute; left:0px; top:' + (SquarePixels * 7).toFixed() + 'px;"></div>';
+    }
     function InitBoardDisplay() {
         var x, y;
         var mediaGroupDx = -15;
@@ -158,7 +162,8 @@ var FwDemo;
         for (x = 0; x < 8; ++x) {
             html += MakeRankLabel(x);
         }
-        document.getElementById('DivBoard').innerHTML = html;
+        html += MakeSpriteContainer();
+        BoardDiv.innerHTML = html;
     }
     function AlgCoords(alg) {
         var chessX = 'abcdefgh'.indexOf(alg.charAt(0));
@@ -235,8 +240,69 @@ var FwDemo;
         }
         return false;
     }
+    function BeginPieceDrag(sourceInfo) {
+        var imgSource = sourceInfo.squareDiv.children[0];
+        var x0 = sourceInfo.pageX;
+        var y0 = sourceInfo.pageY;
+        imgSource.style.display = 'none'; // hide the origin image while animating
+        // Create a "sprite" image for the purposes of animation.
+        // It will follow the mouse around.
+        var divSprite = document.getElementById('DivMoveSprite');
+        divSprite.style.left = sourceInfo.squareDiv.style.left;
+        divSprite.style.top = sourceInfo.squareDiv.style.top;
+        var imgSprite = document.createElement('img');
+        imgSprite.setAttribute('src', imgSource.getAttribute('src'));
+        imgSprite.setAttribute('width', SquarePixels.toFixed());
+        imgSprite.setAttribute('height', SquarePixels.toFixed());
+        imgSprite.style.zIndex = '1';
+        imgSprite.style.position = 'absolute';
+        divSprite.appendChild(imgSprite);
+        sourceInfo.dragged = {
+            imgSource: imgSource,
+            imgSprite: imgSprite,
+        };
+        var hoveredSquareDiv;
+        BoardDiv.onmousemove = function (e) {
+            var bc = BoardCoords(e);
+            if (bc) {
+                // Update the sprite location.
+                var dx = e.pageX - x0;
+                var dy = e.pageY - y0;
+                imgSprite.style.left = dx.toFixed() + 'px';
+                imgSprite.style.top = dy.toFixed() + 'px';
+                // This animation interferes with receiving proper
+                // mouse hover events (onmouseover, onmouseout).
+                // Replicate those events here.
+                if (hoveredSquareDiv !== bc.squareDiv) {
+                    if (hoveredSquareDiv) {
+                        RemoveClass(hoveredSquareDiv, 'ChessSquareHover');
+                    }
+                    if (HasClass(bc.squareDiv, 'UserCanSelect')) {
+                        AddClass(bc.squareDiv, 'ChessSquareHover');
+                    }
+                    hoveredSquareDiv = bc.squareDiv;
+                }
+            }
+        };
+    }
+    function EndPieceDrag(sourceInfo) {
+        BoardDiv.onmousemove = null;
+        if (sourceInfo && sourceInfo.dragged) {
+            //sourceInfo.dragged.img.style.left = sourceInfo.dragged.left;
+            //sourceInfo.dragged.img.style.top = sourceInfo.dragged.top;
+            sourceInfo.dragged.imgSource.style.display = ''; // unhide the origin image (it's about to be moved anyway)
+        }
+        var divSprite = document.getElementById('DivMoveSprite');
+        divSprite.innerHTML = ''; // erase the sprite image
+    }
     function SetMoveState(state, sourceInfo) {
         MoveState = state;
+        if (sourceInfo) {
+            BeginPieceDrag(sourceInfo);
+        }
+        else {
+            EndPieceDrag(SourceSquareInfo);
+        }
         SourceSquareInfo = sourceInfo;
         // Make all squares unselectable.
         ForEachSquareDiv(function (div) { return RemoveClass(div, 'UserCanSelect'); });
