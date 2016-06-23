@@ -261,6 +261,8 @@ var FwDemo;
         sourceInfo.dragged = {
             imgSource: imgSource,
             imgSprite: imgSprite,
+            hasLeftSourceSquare: false,
+            mouseUpOnSourceSquare: false,
         };
         var hoveredSquareDiv;
         BoardDiv.onmousemove = function (e) {
@@ -282,6 +284,11 @@ var FwDemo;
                         AddClass(bc.squareDiv, 'ChessSquareHover');
                     }
                     hoveredSquareDiv = bc.squareDiv;
+                    if (!sourceInfo.dragged.hasLeftSourceSquare) {
+                        if (bc.squareDiv !== sourceInfo.squareDiv) {
+                            sourceInfo.dragged.hasLeftSourceSquare = true;
+                        }
+                    }
                 }
             }
         };
@@ -396,7 +403,10 @@ var FwDemo;
                     // If the mouse lifts up in the same square as it went down,
                     // and the mouse has never left that square, treat it as style #2.
                     if (SourceSquareInfo.selector === bc.selector) {
-                        return; // remain in SelectDest state
+                        if (!SourceSquareInfo.dragged.hasLeftSourceSquare && !SourceSquareInfo.dragged.mouseUpOnSourceSquare) {
+                            SourceSquareInfo.dragged.mouseUpOnSourceSquare = true;
+                            return; // remain in SelectDest state
+                        }
                     }
                     // Find matching (source,dest) pair in legal move list, make move on board, redraw board.
                     var legal = TheBoard.LegalMoves();
