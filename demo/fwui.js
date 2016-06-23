@@ -250,6 +250,7 @@ var FwDemo;
         var divSprite = document.getElementById('DivMoveSprite');
         divSprite.style.left = sourceInfo.squareDiv.style.left;
         divSprite.style.top = sourceInfo.squareDiv.style.top;
+        divSprite.style.display = '';
         var imgSprite = document.createElement('img');
         imgSprite.setAttribute('src', imgSource.getAttribute('src'));
         imgSprite.setAttribute('width', SquarePixels.toFixed());
@@ -288,12 +289,11 @@ var FwDemo;
     function EndPieceDrag(sourceInfo) {
         BoardDiv.onmousemove = null;
         if (sourceInfo && sourceInfo.dragged) {
-            //sourceInfo.dragged.img.style.left = sourceInfo.dragged.left;
-            //sourceInfo.dragged.img.style.top = sourceInfo.dragged.top;
             sourceInfo.dragged.imgSource.style.display = ''; // unhide the origin image (it's about to be moved anyway)
         }
         var divSprite = document.getElementById('DivMoveSprite');
         divSprite.innerHTML = ''; // erase the sprite image
+        divSprite.style.display = 'none';
     }
     function SetMoveState(state, sourceInfo) {
         MoveState = state;

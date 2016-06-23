@@ -259,6 +259,7 @@ module FwDemo {
         var divSprite = document.getElementById('DivMoveSprite');
         divSprite.style.left = sourceInfo.squareDiv.style.left;
         divSprite.style.top = sourceInfo.squareDiv.style.top;
+        divSprite.style.display = '';
 
         var imgSprite = document.createElement('img');
         imgSprite.setAttribute('src', imgSource.getAttribute('src'));
@@ -307,6 +308,7 @@ module FwDemo {
         }
         var divSprite = document.getElementById('DivMoveSprite');
         divSprite.innerHTML = '';   // erase the sprite image
+        divSprite.style.display = 'none';
     }
 
     function SetMoveState(state:MoveStateType, sourceInfo?):void {
