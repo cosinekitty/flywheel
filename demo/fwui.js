@@ -136,7 +136,7 @@ var FwDemo;
             '"></div>';
     }
     function MakeSpriteContainer() {
-        return '<div id="DivMoveSprite" style="z-index:1; width:' + SquarePixels + 'px; height:' + SquarePixels + 'px; ' +
+        return '<div id="DivMoveSprite" style="display:none; z-index:1; width:' + SquarePixels + 'px; height:' + SquarePixels + 'px; ' +
             'position:absolute; left:0px; top:' + (SquarePixels * 7).toFixed() + 'px;"></div>';
     }
     function InitBoardDisplay() {
