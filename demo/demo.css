@@ -37,5 +37,17 @@ body {
 }
 
 .ChessSquareSelected {
+}
 
+.GameResultText {
+    background: transparent;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    font-size: 100px;
+    text-align: center;
+    vertical-align: middle;
+    font-family: serif;
+    color: rgba(255, 118, 66, 1.0);
+    text-shadow: 2px 3px 1px rgba(0, 0, 0, 0.45);
 }

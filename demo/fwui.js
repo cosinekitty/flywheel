@@ -28,6 +28,7 @@ var FwDemo;
     var PlayStopEnabled = false;
     var PlayStopState = PlayStopStateType.Play;
     var BoardDiv;
+    var ResultTextDiv;
     // The chess board stores the history, but we need to be able to redo
     // moves that have been undone.
     var GameHistory = [];
@@ -139,6 +140,15 @@ var FwDemo;
         return '<div id="DivMoveSprite" style="display:none; z-index:1; width:' + SquarePixels + 'px; height:' + SquarePixels + 'px; ' +
             'position:absolute; left:0px; top:' + (SquarePixels * 7).toFixed() + 'px;"></div>';
     }
+    function MakeResultTextDiv() {
+        var div = document.createElement('div');
+        div.id = 'DivResultText';
+        div.className = 'GameResultText';
+        div.style.width = (8 * SquarePixels).toFixed() + 'px';
+        div.style.height = div.style.lineHeight = (8 * SquarePixels).toFixed() + 'px';
+        div.style.display = 'none';
+        return div;
+    }
     function InitBoardDisplay() {
         var x, y;
         var mediaGroupDx = -15;
@@ -164,6 +174,8 @@ var FwDemo;
         }
         html += MakeSpriteContainer();
         BoardDiv.innerHTML = html;
+        ResultTextDiv = MakeResultTextDiv();
+        BoardDiv.appendChild(ResultTextDiv);
     }
     function AlgCoords(alg) {
         var chessX = 'abcdefgh'.indexOf(alg.charAt(0));
@@ -313,6 +325,7 @@ var FwDemo;
         SourceSquareInfo = sourceInfo;
         // Make all squares unselectable.
         ForEachSquareDiv(function (div) { return RemoveClass(div, 'UserCanSelect'); });
+        ForEachSquareDiv(function (div) { return RemoveClass(div, 'ChessSquareHover'); });
         var legal = TheBoard.LegalMoves();
         if (state === MoveStateType.SelectSource) {
             // Mark all squares that contain a piece the user can move with 'UserCanSelect' class.
@@ -351,6 +364,26 @@ var FwDemo;
         document.getElementById('PrevTurnButton').setAttribute('src', PrevButtonImage(false));
         document.getElementById('NextTurnButton').setAttribute('src', NextButtonImage(false));
         document.getElementById('PlayPauseStopButton').setAttribute('src', PlayStopImage(false));
+        var rhtml;
+        var result = board.GetGameResult();
+        switch (result.status) {
+            case Flywheel.GameStatus.Draw:
+                rhtml = '&frac12;&ndash;&frac12;';
+                break;
+            case Flywheel.GameStatus.WhiteWins:
+                rhtml = '1&ndash;0';
+                break;
+            case Flywheel.GameStatus.BlackWins:
+                rhtml = '0&ndash;1';
+                break;
+        }
+        if (rhtml) {
+            ResultTextDiv.innerHTML = rhtml;
+            ResultTextDiv.style.display = '';
+        }
+        else {
+            ResultTextDiv.style.display = 'none';
+        }
     }
     function BoardCoords(e) {
         var screenX = Math.floor((e.pageX - BoardDiv.offsetLeft) / SquarePixels);
@@ -432,15 +465,7 @@ var FwDemo;
                             GameHistoryIndex = GameHistory.length;
                         }
                         DrawBoard(TheBoard);
-                        var result = TheBoard.GetGameResult();
-                        if (result.status === Flywheel.GameStatus.InProgress) {
-                            // FIXFIXFIX - check for computer opponent
-                            SetMoveState(MoveStateType.SelectSource);
-                        }
-                        else {
-                            // Game is over!
-                            SetMoveState(MoveStateType.GameOver);
-                        }
+                        BeginNextMoveState();
                     }
                     else {
                         // Not a valid move, so cancel the current move and start over.
@@ -448,6 +473,17 @@ var FwDemo;
                     }
                 }
             }
+        }
+    }
+    function BeginNextMoveState() {
+        var result = TheBoard.GetGameResult();
+        if (result.status === Flywheel.GameStatus.InProgress) {
+            // FIXFIXFIX - check for computer opponent
+            SetMoveState(MoveStateType.SelectSource);
+        }
+        else {
+            // Game is over!
+            SetMoveState(MoveStateType.GameOver);
         }
     }
     function InitControls() {
@@ -464,7 +500,7 @@ var FwDemo;
         rotateButton.onclick = function () {
             RotateFlag = !RotateFlag;
             DrawBoard(TheBoard);
-            SetMoveState(MoveStateType.SelectSource); // refresh clickable squares after rotation, and start move over (too complicated otherwise)
+            BeginNextMoveState();
         };
         rotateButton.onmouseover = function () {
             rotateButton.setAttribute('src', 'shadow2/loop-circular-8x.png');
@@ -495,7 +531,7 @@ var FwDemo;
             if (NextTurnEnabled) {
                 TheBoard.PushMove(GameHistory[GameHistoryIndex++]);
                 DrawBoard(TheBoard);
-                SetMoveState(MoveStateType.SelectSource);
+                BeginNextMoveState();
             }
         };
         nextTurnButton.onmouseover = function () {
@@ -521,7 +557,7 @@ var FwDemo;
         InitBoardDisplay();
         DrawBoard(TheBoard);
         InitControls();
-        SetMoveState(MoveStateType.SelectSource);
+        BeginNextMoveState();
     }
     FwDemo.InitPage = InitPage;
 })(FwDemo || (FwDemo = {}));

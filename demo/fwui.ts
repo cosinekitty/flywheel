@@ -27,6 +27,7 @@ module FwDemo {
     var PlayStopEnabled:boolean = false;
     var PlayStopState:PlayStopStateType = PlayStopStateType.Play;
     var BoardDiv;
+    var ResultTextDiv;
 
     // The chess board stores the history, but we need to be able to redo
     // moves that have been undone.
@@ -133,6 +134,16 @@ module FwDemo {
             'position:absolute; left:0px; top:' + (SquarePixels*7).toFixed() + 'px;"></div>';
     }
 
+    function MakeResultTextDiv():HTMLElement {
+        var div = document.createElement('div');
+        div.id = 'DivResultText';
+        div.className = 'GameResultText';
+        div.style.width = (8 * SquarePixels).toFixed() + 'px';
+        div.style.height = div.style.lineHeight = (8 * SquarePixels).toFixed() + 'px';
+        div.style.display = 'none';
+        return div;
+    }
+
     function InitBoardDisplay():void {
         var x, y;
 
@@ -166,6 +177,9 @@ module FwDemo {
         html += MakeSpriteContainer();
 
         BoardDiv.innerHTML = html;
+
+        ResultTextDiv = MakeResultTextDiv();
+        BoardDiv.appendChild(ResultTextDiv);
     }
 
     function AlgCoords(alg:string) {
@@ -330,6 +344,7 @@ module FwDemo {
 
         // Make all squares unselectable.
         ForEachSquareDiv((div) => RemoveClass(div, 'UserCanSelect'));
+        ForEachSquareDiv((div) => RemoveClass(div, 'ChessSquareHover'));
 
         let legal:Flywheel.Move[] = TheBoard.LegalMoves();
         if (state === MoveStateType.SelectSource) {
@@ -369,6 +384,29 @@ module FwDemo {
         document.getElementById('PrevTurnButton').setAttribute('src', PrevButtonImage(false));
         document.getElementById('NextTurnButton').setAttribute('src', NextButtonImage(false));
         document.getElementById('PlayPauseStopButton').setAttribute('src', PlayStopImage(false));
+
+        let rhtml:string;
+        let result = board.GetGameResult();
+        switch (result.status) {
+            case Flywheel.GameStatus.Draw:
+                rhtml = '&frac12;&ndash;&frac12;';
+                break;
+
+            case Flywheel.GameStatus.WhiteWins:
+                rhtml = '1&ndash;0';
+                break;
+
+            case Flywheel.GameStatus.BlackWins:
+                rhtml = '0&ndash;1';
+                break;
+        }
+
+        if (rhtml) {
+            ResultTextDiv.innerHTML = rhtml;
+            ResultTextDiv.style.display = '';
+        } else {
+            ResultTextDiv.style.display = 'none';
+        }
     }
 
     function BoardCoords(e) {
@@ -461,21 +499,24 @@ module FwDemo {
                             GameHistoryIndex = GameHistory.length;
                         }
                         DrawBoard(TheBoard);
-                        let result = TheBoard.GetGameResult();
-                        if (result.status === Flywheel.GameStatus.InProgress) {
-                            // FIXFIXFIX - check for computer opponent
-                            SetMoveState(MoveStateType.SelectSource);
-                        } else {
-                            // Game is over!
-                            SetMoveState(MoveStateType.GameOver);
-                            // FIXFIXFIX - decorate the board with a result message.
-                        }
+                        BeginNextMoveState();
                     } else {
                         // Not a valid move, so cancel the current move and start over.
                         SetMoveState(MoveStateType.SelectSource);
                     }
                 }
             }
+        }
+    }
+
+    function BeginNextMoveState():void {
+        let result = TheBoard.GetGameResult();
+        if (result.status === Flywheel.GameStatus.InProgress) {
+            // FIXFIXFIX - check for computer opponent
+            SetMoveState(MoveStateType.SelectSource);
+        } else {
+            // Game is over!
+            SetMoveState(MoveStateType.GameOver);
         }
     }
 
@@ -495,7 +536,7 @@ module FwDemo {
         rotateButton.onclick = function(){
             RotateFlag = !RotateFlag;
             DrawBoard(TheBoard);
-            SetMoveState(MoveStateType.SelectSource);   // refresh clickable squares after rotation, and start move over (too complicated otherwise)
+            BeginNextMoveState();
         };
 
         rotateButton.onmouseover = function(){
@@ -532,7 +573,7 @@ module FwDemo {
             if (NextTurnEnabled) {
                 TheBoard.PushMove(GameHistory[GameHistoryIndex++]);
                 DrawBoard(TheBoard);
-                SetMoveState(MoveStateType.SelectSource);
+                BeginNextMoveState();
             }
         };
 
@@ -565,7 +606,7 @@ module FwDemo {
         InitBoardDisplay();
         DrawBoard(TheBoard);
         InitControls();
-        SetMoveState(MoveStateType.SelectSource);
+        BeginNextMoveState();
     }
 }
 
