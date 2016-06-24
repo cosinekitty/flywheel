@@ -554,7 +554,6 @@ module FwDemo {
                 TheBoard.PopMove();
                 --GameHistoryIndex;
                 DrawBoard(TheBoard);
-                SetMoveState(MoveStateType.SelectSource);
             }
         };
 
