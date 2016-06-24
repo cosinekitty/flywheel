@@ -365,26 +365,7 @@ module FwDemo {
         }
     }
 
-    function DrawBoard(board:Flywheel.Board):void {
-        for (let y=0; y < 8; ++y) {
-            let ry = RotateFlag ? (7 - y) : y;
-            document.getElementById('RankLabel_' + ry.toFixed()).textContent = ('87654321'.charAt(y));
-            document.getElementById('FileLabel_' + ry.toFixed()).textContent = ('abcdefgh'.charAt(y));
-            for (let x=0; x < 8; ++x) {
-                let rx = RotateFlag ? (7 - x) : x;
-                let sq:Flywheel.Square = board.GetSquareByCoords(x, y);
-                let sdiv = SquareDiv(rx, ry);
-                sdiv.innerHTML = MakeImageHtml(sq);
-            }
-        }
-
-        PrevTurnEnabled = board.CanPopMove();
-        NextTurnEnabled = (GameHistoryIndex < GameHistory.length);
-
-        document.getElementById('PrevTurnButton').setAttribute('src', PrevButtonImage(false));
-        document.getElementById('NextTurnButton').setAttribute('src', NextButtonImage(false));
-        document.getElementById('PlayPauseStopButton').setAttribute('src', PlayStopImage(false));
-
+    function DrawResultText(board:Flywheel.Board):void {
         let rhtml:string;
         let result = board.GetGameResult();
         switch (result.status) {
@@ -407,6 +388,29 @@ module FwDemo {
         } else {
             ResultTextDiv.style.display = 'none';
         }
+    }
+
+    function DrawBoard(board:Flywheel.Board):void {
+        for (let y=0; y < 8; ++y) {
+            let ry = RotateFlag ? (7 - y) : y;
+            document.getElementById('RankLabel_' + ry.toFixed()).textContent = ('87654321'.charAt(y));
+            document.getElementById('FileLabel_' + ry.toFixed()).textContent = ('abcdefgh'.charAt(y));
+            for (let x=0; x < 8; ++x) {
+                let rx = RotateFlag ? (7 - x) : x;
+                let sq:Flywheel.Square = board.GetSquareByCoords(x, y);
+                let sdiv = SquareDiv(rx, ry);
+                sdiv.innerHTML = MakeImageHtml(sq);
+            }
+        }
+
+        PrevTurnEnabled = board.CanPopMove();
+        NextTurnEnabled = (GameHistoryIndex < GameHistory.length);
+
+        document.getElementById('PrevTurnButton').setAttribute('src', PrevButtonImage(false));
+        document.getElementById('NextTurnButton').setAttribute('src', NextButtonImage(false));
+        document.getElementById('PlayPauseStopButton').setAttribute('src', PlayStopImage(false));
+
+        DrawResultText(board);
     }
 
     function BoardCoords(e) {

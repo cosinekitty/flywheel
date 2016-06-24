@@ -347,23 +347,7 @@ var FwDemo;
             }
         }
     }
-    function DrawBoard(board) {
-        for (var y = 0; y < 8; ++y) {
-            var ry = RotateFlag ? (7 - y) : y;
-            document.getElementById('RankLabel_' + ry.toFixed()).textContent = ('87654321'.charAt(y));
-            document.getElementById('FileLabel_' + ry.toFixed()).textContent = ('abcdefgh'.charAt(y));
-            for (var x = 0; x < 8; ++x) {
-                var rx = RotateFlag ? (7 - x) : x;
-                var sq = board.GetSquareByCoords(x, y);
-                var sdiv = SquareDiv(rx, ry);
-                sdiv.innerHTML = MakeImageHtml(sq);
-            }
-        }
-        PrevTurnEnabled = board.CanPopMove();
-        NextTurnEnabled = (GameHistoryIndex < GameHistory.length);
-        document.getElementById('PrevTurnButton').setAttribute('src', PrevButtonImage(false));
-        document.getElementById('NextTurnButton').setAttribute('src', NextButtonImage(false));
-        document.getElementById('PlayPauseStopButton').setAttribute('src', PlayStopImage(false));
+    function DrawResultText(board) {
         var rhtml;
         var result = board.GetGameResult();
         switch (result.status) {
@@ -384,6 +368,25 @@ var FwDemo;
         else {
             ResultTextDiv.style.display = 'none';
         }
+    }
+    function DrawBoard(board) {
+        for (var y = 0; y < 8; ++y) {
+            var ry = RotateFlag ? (7 - y) : y;
+            document.getElementById('RankLabel_' + ry.toFixed()).textContent = ('87654321'.charAt(y));
+            document.getElementById('FileLabel_' + ry.toFixed()).textContent = ('abcdefgh'.charAt(y));
+            for (var x = 0; x < 8; ++x) {
+                var rx = RotateFlag ? (7 - x) : x;
+                var sq = board.GetSquareByCoords(x, y);
+                var sdiv = SquareDiv(rx, ry);
+                sdiv.innerHTML = MakeImageHtml(sq);
+            }
+        }
+        PrevTurnEnabled = board.CanPopMove();
+        NextTurnEnabled = (GameHistoryIndex < GameHistory.length);
+        document.getElementById('PrevTurnButton').setAttribute('src', PrevButtonImage(false));
+        document.getElementById('NextTurnButton').setAttribute('src', NextButtonImage(false));
+        document.getElementById('PlayPauseStopButton').setAttribute('src', PlayStopImage(false));
+        DrawResultText(board);
     }
     function BoardCoords(e) {
         var screenX = Math.floor((e.pageX - BoardDiv.offsetLeft) / SquarePixels);
