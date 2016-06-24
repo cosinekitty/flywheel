@@ -213,10 +213,15 @@ module FwDemo {
     }
 
     function ClassList(elem:HTMLElement):string[] {
+        var filt = [];
         if (elem.className) {
-            return elem.className.split(/\s+/g);
+            for (let token of elem.className.split(/\s+/g)) {
+                if (token) {
+                    filt.push(token);
+                }
+            }
         }
-        return [];
+        return filt;
     }
 
     function RemoveClass(elem:HTMLElement, classname:string):HTMLElement {

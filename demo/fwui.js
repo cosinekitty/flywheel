@@ -204,10 +204,16 @@ var FwDemo;
         }
     }
     function ClassList(elem) {
+        var filt = [];
         if (elem.className) {
-            return elem.className.split(/\s+/g);
+            for (var _i = 0, _a = elem.className.split(/\s+/g); _i < _a.length; _i++) {
+                var token = _a[_i];
+                if (token) {
+                    filt.push(token);
+                }
+            }
         }
-        return [];
+        return filt;
     }
     function RemoveClass(elem, classname) {
         var classlist = ClassList(elem);
