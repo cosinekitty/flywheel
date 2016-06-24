@@ -365,9 +365,8 @@ module FwDemo {
         }
     }
 
-    function DrawResultText(board:Flywheel.Board):void {
+    function DrawResultText(result:Flywheel.GameResult):void {
         let rhtml:string;
-        let result = board.GetGameResult();
         switch (result.status) {
             case Flywheel.GameStatus.Draw:
                 rhtml = '&frac12;&ndash;&frac12;';
@@ -410,7 +409,16 @@ module FwDemo {
         document.getElementById('NextTurnButton').setAttribute('src', NextButtonImage(false));
         document.getElementById('PlayPauseStopButton').setAttribute('src', PlayStopImage(false));
 
-        DrawResultText(board);
+        let result = board.GetGameResult();
+        DrawResultText(result);
+
+        if (result.status === Flywheel.GameStatus.InProgress) {
+            // FIXFIXFIX - check for computer opponent
+            SetMoveState(MoveStateType.SelectSource);
+        } else {
+            // Game is over!
+            SetMoveState(MoveStateType.GameOver);
+        }
     }
 
     function BoardCoords(e) {
@@ -503,24 +511,12 @@ module FwDemo {
                             GameHistoryIndex = GameHistory.length;
                         }
                         DrawBoard(TheBoard);
-                        BeginNextMoveState();
                     } else {
                         // Not a valid move, so cancel the current move and start over.
                         SetMoveState(MoveStateType.SelectSource);
                     }
                 }
             }
-        }
-    }
-
-    function BeginNextMoveState():void {
-        let result = TheBoard.GetGameResult();
-        if (result.status === Flywheel.GameStatus.InProgress) {
-            // FIXFIXFIX - check for computer opponent
-            SetMoveState(MoveStateType.SelectSource);
-        } else {
-            // Game is over!
-            SetMoveState(MoveStateType.GameOver);
         }
     }
 
@@ -540,7 +536,6 @@ module FwDemo {
         rotateButton.onclick = function(){
             RotateFlag = !RotateFlag;
             DrawBoard(TheBoard);
-            BeginNextMoveState();
         };
 
         rotateButton.onmouseover = function(){
@@ -577,7 +572,6 @@ module FwDemo {
             if (NextTurnEnabled) {
                 TheBoard.PushMove(GameHistory[GameHistoryIndex++]);
                 DrawBoard(TheBoard);
-                BeginNextMoveState();
             }
         };
 
@@ -610,7 +604,6 @@ module FwDemo {
         InitBoardDisplay();
         DrawBoard(TheBoard);
         InitControls();
-        BeginNextMoveState();
     }
 }
 

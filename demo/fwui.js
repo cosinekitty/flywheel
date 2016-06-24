@@ -347,9 +347,8 @@ var FwDemo;
             }
         }
     }
-    function DrawResultText(board) {
+    function DrawResultText(result) {
         var rhtml;
-        var result = board.GetGameResult();
         switch (result.status) {
             case Flywheel.GameStatus.Draw:
                 rhtml = '&frac12;&ndash;&frac12;';
@@ -386,7 +385,16 @@ var FwDemo;
         document.getElementById('PrevTurnButton').setAttribute('src', PrevButtonImage(false));
         document.getElementById('NextTurnButton').setAttribute('src', NextButtonImage(false));
         document.getElementById('PlayPauseStopButton').setAttribute('src', PlayStopImage(false));
-        DrawResultText(board);
+        var result = board.GetGameResult();
+        DrawResultText(result);
+        if (result.status === Flywheel.GameStatus.InProgress) {
+            // FIXFIXFIX - check for computer opponent
+            SetMoveState(MoveStateType.SelectSource);
+        }
+        else {
+            // Game is over!
+            SetMoveState(MoveStateType.GameOver);
+        }
     }
     function BoardCoords(e) {
         var screenX = Math.floor((e.pageX - BoardDiv.offsetLeft) / SquarePixels);
@@ -468,7 +476,6 @@ var FwDemo;
                             GameHistoryIndex = GameHistory.length;
                         }
                         DrawBoard(TheBoard);
-                        BeginNextMoveState();
                     }
                     else {
                         // Not a valid move, so cancel the current move and start over.
@@ -476,17 +483,6 @@ var FwDemo;
                     }
                 }
             }
-        }
-    }
-    function BeginNextMoveState() {
-        var result = TheBoard.GetGameResult();
-        if (result.status === Flywheel.GameStatus.InProgress) {
-            // FIXFIXFIX - check for computer opponent
-            SetMoveState(MoveStateType.SelectSource);
-        }
-        else {
-            // Game is over!
-            SetMoveState(MoveStateType.GameOver);
         }
     }
     function InitControls() {
@@ -503,7 +499,6 @@ var FwDemo;
         rotateButton.onclick = function () {
             RotateFlag = !RotateFlag;
             DrawBoard(TheBoard);
-            BeginNextMoveState();
         };
         rotateButton.onmouseover = function () {
             rotateButton.setAttribute('src', 'shadow2/loop-circular-8x.png');
@@ -534,7 +529,6 @@ var FwDemo;
             if (NextTurnEnabled) {
                 TheBoard.PushMove(GameHistory[GameHistoryIndex++]);
                 DrawBoard(TheBoard);
-                BeginNextMoveState();
             }
         };
         nextTurnButton.onmouseover = function () {
@@ -560,7 +554,6 @@ var FwDemo;
         InitBoardDisplay();
         DrawBoard(TheBoard);
         InitControls();
-        BeginNextMoveState();
     }
     FwDemo.InitPage = InitPage;
 })(FwDemo || (FwDemo = {}));
