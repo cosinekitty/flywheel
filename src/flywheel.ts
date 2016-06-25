@@ -348,6 +348,26 @@ module Flywheel {
             return alg;
         }
 
+        public static GetRankNumber(ofs:number):number {    // returns rank 1..8
+            let rank:number = Board.RankNumber[ofs];
+            if (!rank) {
+                throw "Invalid board offset " + ofs;
+            }
+            return rank;
+        }
+
+        public static GetSidedPiece(side:Side, neut:NeutralPiece):Square {
+            let pieceArray = Utility.SidePieces[side];
+            if (!pieceArray) {
+                throw "Invalid side " + side;
+            }
+            let piece = pieceArray[neut];
+            if (!piece) {
+                throw "Invalid neutral piece " + neut;
+            }
+            return piece;
+        }
+
         //-----------------------------------------------------------------------------------------------------
         // Object/member stuff
 

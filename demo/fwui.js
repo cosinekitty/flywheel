@@ -6,7 +6,8 @@ var FwDemo;
         MoveStateType[MoveStateType["OpponentTurn"] = 0] = "OpponentTurn";
         MoveStateType[MoveStateType["SelectSource"] = 1] = "SelectSource";
         MoveStateType[MoveStateType["SelectDest"] = 2] = "SelectDest";
-        MoveStateType[MoveStateType["GameOver"] = 3] = "GameOver";
+        MoveStateType[MoveStateType["SelectPromotionPiece"] = 3] = "SelectPromotionPiece";
+        MoveStateType[MoveStateType["GameOver"] = 4] = "GameOver";
     })(MoveStateType || (MoveStateType = {}));
     ;
     var PlayStopStateType;
@@ -321,6 +322,7 @@ var FwDemo;
         divSprite.style.display = 'none';
     }
     function SetMoveState(state, sourceInfo) {
+        EndPawnPromotion();
         MoveState = state;
         if (sourceInfo) {
             BeginPieceDrag(sourceInfo);
@@ -442,6 +444,102 @@ var FwDemo;
             }
         }
     }
+    function CommitMove(move) {
+        TheBoard.PushMove(move);
+        if ((GameHistoryIndex < GameHistory.length) && move.Equals(GameHistory[GameHistoryIndex])) {
+            // Special case: treat this move as a redo, so don't disrupt the history.
+            ++GameHistoryIndex;
+        }
+        else {
+            GameHistory = TheBoard.MoveHistory();
+            GameHistoryIndex = GameHistory.length;
+        }
+        DrawBoard(TheBoard);
+    }
+    var PawnPromotionInfo = null;
+    function BeginPawnPromotion(movelist) {
+        // The user has clicked on a (source, dest) pair that indicates pawn promotion.
+        // The 'promlist' passed in is a list of the 4 promotion moves to choose from.
+        // They are all the same except the promotion piece is one of:
+        // NeutralPiece.Queen, NeutralPiece.Rook, NeutralPiece.Bishop, NeutralPiece.Knight.
+        // Enter a user interface state where the user can select which piece to promote the pawn to,
+        // or he may opt to cancel the move.
+        var source = movelist[0].source;
+        var dest = movelist[0].dest;
+        var destRank = Flywheel.Board.GetRankNumber(dest);
+        var side = (destRank === 8) ? Flywheel.Side.White : Flywheel.Side.Black;
+        // Create a promotion menu div that sits on top of the board display.
+        var menudiv = document.createElement('div');
+        menudiv.className = 'PawnPromotionMenu';
+        menudiv.style.top = (SquarePixels * 3.5).toFixed() + 'px';
+        menudiv.style.left = (SquarePixels * 1.5).toFixed() + 'px';
+        menudiv.style.width = (SquarePixels * 5).toFixed() + 'px';
+        menudiv.style.height = (SquarePixels).toFixed() + 'px';
+        menudiv.appendChild(PromotionOptionDiv(side, Flywheel.NeutralPiece.Queen, movelist, 0));
+        menudiv.appendChild(PromotionOptionDiv(side, Flywheel.NeutralPiece.Rook, movelist, 1));
+        menudiv.appendChild(PromotionOptionDiv(side, Flywheel.NeutralPiece.Bishop, movelist, 2));
+        menudiv.appendChild(PromotionOptionDiv(side, Flywheel.NeutralPiece.Knight, movelist, 3));
+        menudiv.appendChild(PromotionCancelDiv(4));
+        BoardDiv.appendChild(menudiv);
+        // Transition to pawn promotion state.
+        SetMoveState(MoveStateType.SelectPromotionPiece);
+        // Remember information needed to manage pawn promotion UI state.
+        PawnPromotionInfo = {
+            movelist: movelist,
+            menudiv: menudiv,
+        };
+    }
+    function EndPawnPromotion() {
+        // Remove pawn promotion menu div.
+        if (PawnPromotionInfo) {
+            BoardDiv.removeChild(PawnPromotionInfo.menudiv);
+            PawnPromotionInfo = null;
+        }
+    }
+    function PromotionOptionDiv(side, prom, movelist, index) {
+        // Search for the matching promotion move in the movelist.
+        // Keep that move in case this is the promotion option chosen by the user.
+        var move;
+        for (var _i = 0, movelist_1 = movelist; _i < movelist_1.length; _i++) {
+            var m = movelist_1[_i];
+            if (m.prom === prom) {
+                move = m;
+                break;
+            }
+        }
+        if (!move) {
+            throw 'Could not find promotion to ' + prom;
+        }
+        var div = document.createElement('div');
+        div.className = 'PawnPromotionOption';
+        div.style.width = SquarePixels.toFixed() + 'px';
+        div.style.height = SquarePixels.toFixed() + 'px';
+        div.style.top = '0px';
+        div.style.left = (index * SquarePixels).toFixed() + 'px';
+        var piece = Flywheel.Board.GetSidedPiece(side, prom);
+        div.innerHTML = MakeImageHtml(piece);
+        div.onclick = function () {
+            CommitMove(move);
+        };
+        return div;
+    }
+    function PromotionCancelDiv(index) {
+        var div = document.createElement('div');
+        div.className = 'PawnPromotionOption';
+        div.style.width = SquarePixels.toFixed() + 'px';
+        div.style.height = SquarePixels.toFixed() + 'px';
+        div.style.top = '0px';
+        div.style.left = (index * SquarePixels).toFixed() + 'px';
+        var icon = document.createElement('img');
+        icon.setAttribute('src', '../icon/cancel-button.png');
+        icon.setAttribute('width', SquarePixels.toFixed());
+        icon.setAttribute('height', SquarePixels.toFixed());
+        div.appendChild(icon);
+        div.onclick = function () {
+            DrawBoard(TheBoard);
+        };
+        return div;
+    }
     function OnSquareMouseUp(e) {
         if (e.which === 1) {
             var bc = BoardCoords(e);
@@ -460,32 +558,36 @@ var FwDemo;
                     }
                     // Find matching (source,dest) pair in legal move list, make move on board, redraw board.
                     var legal = TheBoard.LegalMoves();
-                    var chosenMove = null;
+                    var matchingMoveList = [];
                     for (var _i = 0, legal_3 = legal; _i < legal_3.length; _i++) {
                         var move = legal_3[_i];
                         var coords = MoveCoords(move);
                         if (coords.dest.selector === bc.selector) {
                             if (coords.source.selector === SourceSquareInfo.selector) {
-                                // !!! FIXFIXFIX - check for pawn promotion, prompt for promotion piece (make a list of such moves?)
-                                chosenMove = move;
+                                // Usually only one move will match, but when a player promotes a pawn,
+                                // there will be 4 matching moves (Q, B, R, N).
+                                matchingMoveList.push(move);
                             }
                         }
                     }
-                    if (chosenMove) {
-                        TheBoard.PushMove(chosenMove);
-                        if ((GameHistoryIndex < GameHistory.length) && chosenMove.Equals(GameHistory[GameHistoryIndex])) {
-                            // Special case: treat this move as a redo, so don't disrupt the history.
-                            ++GameHistoryIndex;
-                        }
-                        else {
-                            GameHistory = TheBoard.MoveHistory();
-                            GameHistoryIndex = GameHistory.length;
-                        }
-                        DrawBoard(TheBoard);
-                    }
-                    else {
-                        // Not a valid move, so cancel the current move and start over.
-                        SetMoveState(MoveStateType.SelectSource);
+                    switch (matchingMoveList.length) {
+                        case 0:
+                            // Not a valid move, so cancel the current move and start over.
+                            SetMoveState(MoveStateType.SelectSource);
+                            break;
+                        case 1:
+                            // A non-promotion legal move is always unique based on (source, dest) pair.
+                            CommitMove(matchingMoveList[0]);
+                            break;
+                        case 4:
+                            // Assume this is a pawn promotion.
+                            // There are 4 matching moves based on (source, dest) pair:
+                            // one for each possible promotion piece (Queen, Rook, Bishop, Knight).
+                            BeginPawnPromotion(matchingMoveList);
+                            break;
+                        default:
+                            // This should be impossible if the legal move generator is working correctly!
+                            throw 'Impossible number of matching moves = ' + matchingMoveList.length;
                     }
                 }
             }

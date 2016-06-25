@@ -324,6 +324,24 @@ var Flywheel;
             }
             return alg;
         };
+        Board.GetRankNumber = function (ofs) {
+            var rank = Board.RankNumber[ofs];
+            if (!rank) {
+                throw "Invalid board offset " + ofs;
+            }
+            return rank;
+        };
+        Board.GetSidedPiece = function (side, neut) {
+            var pieceArray = Utility.SidePieces[side];
+            if (!pieceArray) {
+                throw "Invalid side " + side;
+            }
+            var piece = pieceArray[neut];
+            if (!piece) {
+                throw "Invalid neutral piece " + neut;
+            }
+            return piece;
+        };
         Board.prototype.SetDebugMode = function (debugMode) {
             this.debugMode = debugMode;
         };
