@@ -356,6 +356,10 @@ module Flywheel {
             return rank;
         }
 
+        public static GetFileNumber(ofs:number):number {    // returns file 1..8
+            return 'abcdefgh'.indexOf(Board.Algebraic(ofs).charAt(0)) + 1;
+        }
+
         public static GetSidedPiece(side:Side, neut:NeutralPiece):Square {
             let pieceArray = Utility.SidePieces[side];
             if (!pieceArray) {

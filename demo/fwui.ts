@@ -522,7 +522,6 @@ module FwDemo {
 
         // Remember information needed to manage pawn promotion UI state.
         PawnPromotionInfo = {
-            movelist: movelist,
             menudiv: menudiv,
         };
     }
@@ -553,6 +552,13 @@ module FwDemo {
         if (!move) {
             throw 'Could not find promotion to ' + prom;
         }
+
+        var coords = MoveCoords(move);
+        var sourceSquareDiv = document.getElementById(coords.source.selector);
+        var destSquareDiv = document.getElementById(coords.dest.selector);
+
+        sourceSquareDiv.innerHTML = MakeImageHtml(Flywheel.Square.Empty);
+        destSquareDiv.innerHTML = MakeImageHtml(Flywheel.Board.GetSidedPiece(side, Flywheel.NeutralPiece.Pawn));
 
         var div = document.createElement('div');
         div.className = 'PawnPromotionOption';

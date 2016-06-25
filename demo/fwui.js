@@ -485,7 +485,6 @@ var FwDemo;
         SetMoveState(MoveStateType.SelectPromotionPiece);
         // Remember information needed to manage pawn promotion UI state.
         PawnPromotionInfo = {
-            movelist: movelist,
             menudiv: menudiv,
         };
     }
@@ -510,6 +509,11 @@ var FwDemo;
         if (!move) {
             throw 'Could not find promotion to ' + prom;
         }
+        var coords = MoveCoords(move);
+        var sourceSquareDiv = document.getElementById(coords.source.selector);
+        var destSquareDiv = document.getElementById(coords.dest.selector);
+        sourceSquareDiv.innerHTML = MakeImageHtml(Flywheel.Square.Empty);
+        destSquareDiv.innerHTML = MakeImageHtml(Flywheel.Board.GetSidedPiece(side, Flywheel.NeutralPiece.Pawn));
         var div = document.createElement('div');
         div.className = 'PawnPromotionOption';
         div.style.width = SquarePixels.toFixed() + 'px';

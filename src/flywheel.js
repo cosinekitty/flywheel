@@ -331,6 +331,9 @@ var Flywheel;
             }
             return rank;
         };
+        Board.GetFileNumber = function (ofs) {
+            return 'abcdefgh'.indexOf(Board.Algebraic(ofs).charAt(0)) + 1;
+        };
         Board.GetSidedPiece = function (side, neut) {
             var pieceArray = Utility.SidePieces[side];
             if (!pieceArray) {
