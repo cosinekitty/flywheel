@@ -532,7 +532,7 @@ var FwDemo;
             throw 'Could not find promotion to ' + prom;
         }
         var div = document.createElement('div');
-        div.className = 'PawnPromotionOption';
+        div.className = 'PawnPromotionOptionNormal';
         div.style.width = SquarePixels.toFixed() + 'px';
         div.style.height = SquarePixels.toFixed() + 'px';
         div.style.top = '0px';
@@ -542,11 +542,17 @@ var FwDemo;
         div.onclick = function () {
             CommitMove(move);
         };
+        div.onmouseover = function () {
+            div.className = 'PawnPromotionOptionHover';
+        };
+        div.onmouseout = function () {
+            div.className = 'PawnPromotionOptionNormal';
+        };
         return div;
     }
     function PromotionCancelDiv(index) {
         var div = document.createElement('div');
-        div.className = 'PawnPromotionOption';
+        div.className = 'PawnPromotionOptionNormal';
         div.style.width = SquarePixels.toFixed() + 'px';
         div.style.height = SquarePixels.toFixed() + 'px';
         div.style.top = '0px';
@@ -558,6 +564,12 @@ var FwDemo;
         div.appendChild(icon);
         div.onclick = function () {
             DrawBoard(TheBoard);
+        };
+        div.onmouseover = function () {
+            div.className = 'PawnPromotionOptionHover';
+        };
+        div.onmouseout = function () {
+            div.className = 'PawnPromotionOptionNormal';
         };
         return div;
     }

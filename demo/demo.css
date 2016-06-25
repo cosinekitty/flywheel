@@ -53,11 +53,16 @@ body {
 }
 
 .PawnPromotionMenu {
-    background-color: rgba(0, 0, 255, 0.35);
     position: absolute;
     z-index: 2;
 }
 
-.PawnPromotionOption {
+.PawnPromotionOptionNormal {
+    background-color: rgba(0, 0, 255, 0.35);
+    position: absolute;
+}
+
+.PawnPromotionOptionHover {
+    background-color: rgba(200, 200, 0, 1.0);
     position: absolute;
 }

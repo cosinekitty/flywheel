@@ -579,7 +579,7 @@ module FwDemo {
         }
 
         var div = document.createElement('div');
-        div.className = 'PawnPromotionOption';
+        div.className = 'PawnPromotionOptionNormal';
         div.style.width = SquarePixels.toFixed() + 'px';
         div.style.height = SquarePixels.toFixed() + 'px';
         div.style.top = '0px';
@@ -589,12 +589,18 @@ module FwDemo {
         div.onclick = function() {
             CommitMove(move);
         }
+        div.onmouseover = function() {
+            div.className = 'PawnPromotionOptionHover';
+        }
+        div.onmouseout = function() {
+            div.className = 'PawnPromotionOptionNormal';
+        }
         return div;
     }
 
     function PromotionCancelDiv(index:number):HTMLElement {
         var div = document.createElement('div');
-        div.className = 'PawnPromotionOption';
+        div.className = 'PawnPromotionOptionNormal';
         div.style.width = SquarePixels.toFixed() + 'px';
         div.style.height = SquarePixels.toFixed() + 'px';
         div.style.top = '0px';
@@ -609,6 +615,12 @@ module FwDemo {
 
         div.onclick = function() {
             DrawBoard(TheBoard);
+        }
+        div.onmouseover = function() {
+            div.className = 'PawnPromotionOptionHover';
+        }
+        div.onmouseout = function() {
+            div.className = 'PawnPromotionOptionNormal';
         }
 
         return div;
