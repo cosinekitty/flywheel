@@ -481,16 +481,38 @@ var FwDemo;
         menudiv.appendChild(PromotionOptionDiv(side, Flywheel.NeutralPiece.Knight, movelist, 3));
         menudiv.appendChild(PromotionCancelDiv(4));
         BoardDiv.appendChild(menudiv);
+        // Remove the pawn from the origin square.
+        // Alternate showing the pawn and a question mark on the target square.
+        var coords = MoveCoords(movelist[0]);
+        var sourceSquareDiv = document.getElementById(coords.source.selector);
+        var destSquareDiv = document.getElementById(coords.dest.selector);
+        sourceSquareDiv.innerHTML = MakeImageHtml(Flywheel.Square.Empty);
+        function ShowPawnInTargetSquare() {
+            destSquareDiv.innerHTML = MakeImageHtml(Flywheel.Board.GetSidedPiece(side, Flywheel.NeutralPiece.Pawn));
+        }
+        ShowPawnInTargetSquare();
+        var toggle = false;
+        var intervalId = window.setInterval(function () {
+            toggle = !toggle;
+            if (toggle) {
+                destSquareDiv.innerHTML = '<img src="../icon/question-mark.png" width="' + SquarePixels + '" height="' + SquarePixels + '">';
+            }
+            else {
+                ShowPawnInTargetSquare();
+            }
+        }, 500);
         // Transition to pawn promotion state.
         SetMoveState(MoveStateType.SelectPromotionPiece);
         // Remember information needed to manage pawn promotion UI state.
         PawnPromotionInfo = {
             menudiv: menudiv,
+            toggleIntervalId: intervalId,
         };
     }
     function EndPawnPromotion() {
         // Remove pawn promotion menu div.
         if (PawnPromotionInfo) {
+            window.clearInterval(PawnPromotionInfo.toggleIntervalId);
             BoardDiv.removeChild(PawnPromotionInfo.menudiv);
             PawnPromotionInfo = null;
         }
@@ -509,11 +531,6 @@ var FwDemo;
         if (!move) {
             throw 'Could not find promotion to ' + prom;
         }
-        var coords = MoveCoords(move);
-        var sourceSquareDiv = document.getElementById(coords.source.selector);
-        var destSquareDiv = document.getElementById(coords.dest.selector);
-        sourceSquareDiv.innerHTML = MakeImageHtml(Flywheel.Square.Empty);
-        destSquareDiv.innerHTML = MakeImageHtml(Flywheel.Board.GetSidedPiece(side, Flywheel.NeutralPiece.Pawn));
         var div = document.createElement('div');
         div.className = 'PawnPromotionOption';
         div.style.width = SquarePixels.toFixed() + 'px';
