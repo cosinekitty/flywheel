@@ -1913,7 +1913,45 @@ var Flywheel;
     var Thinker = (function () {
         function Thinker() {
             this.nodesVisitedCounter = 0;
+            this.targetTimeInMillis = 0;
+            this.timeLimitReached = false;
+            this.timePollCounter = 0;
         }
+        Thinker.prototype.IsTimeLimitReached = function () {
+            if (this.timeLimitReached) {
+                return true;
+            }
+            if (++this.timePollCounter >= Thinker.timePollLimit) {
+                this.timePollCounter = 0;
+                if (performance.now() >= this.targetTimeInMillis) {
+                    this.timeLimitReached = true;
+                    return true;
+                }
+            }
+            return false;
+        };
+        Thinker.prototype.SetTimeLimit = function (timeLimitInSeconds) {
+            this.timePollCounter = 0;
+            this.timeLimitReached = false;
+            this.targetTimeInMillis = performance.now() + (timeLimitInSeconds / 1000);
+        };
+        Thinker.prototype.Search = function (board, timeLimitInSeconds) {
+            // Search for a forced checkmate with the specified search limit.
+            // First we must determine if the game is over, either because there
+            // are no legal moves, or because of the various types of non-stalemate draws.
+            this.SetTimeLimit(timeLimitInSeconds);
+            var bestPath = new BestPath();
+            for (var limit = 1; limit === 1 || !this.IsTimeLimitReached(); ++limit) {
+                console.log('Search limit = %s', limit);
+                // FIXFIXFIX: omit moves that lead to forced loss from further consideration.
+                bestPath.score = this.InternalMateSearch(board, limit, 0, bestPath, Score.NegInf, Score.PosInf);
+                if (bestPath.score >= Score.ForcedWin) {
+                    break;
+                }
+            }
+            bestPath.nodes = this.nodesVisitedCounter;
+            return bestPath;
+        };
         Thinker.prototype.MateSearch = function (board, maxLimit) {
             // Search for a forced checkmate with the specified search limit.
             // First we must determine if the game is over, either because there
@@ -1996,6 +2034,7 @@ var Flywheel;
             }
             return bestScore;
         };
+        Thinker.timePollLimit = 1;
         return Thinker;
     }());
     Flywheel.Thinker = Thinker;
@@ -2348,3 +2387,4 @@ var Flywheel;
             [0x5bc2e69c, 0x12f33fc9, 0x4188b799], [0x06df0a17, 0x94c0b1cb, 0x35162120], [0xa9f9654c, 0x9b8c5813, 0xb228a184], [0x8a722a51, 0x71f16c13, 0x0c9ded30], [0x1cd1107c, 0xcdd12672, 0xe207ed90], [0xcf71e527, 0x7aa05aa4, 0x683d95b0]] //    B
     ];
 })(Flywheel || (Flywheel = {}));
+//# sourceMappingURL=flywheel.js.map

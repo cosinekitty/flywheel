@@ -1,3 +1,5 @@
+/// <reference path="../src/flywheel.ts"/>
+
 module FwDemo {
     'use strict';
 
@@ -24,10 +26,11 @@ module FwDemo {
     var BgPale = '#D4CEA3';
     var PrevTurnEnabled:boolean = false;
     var NextTurnEnabled:boolean = false;
-    var PlayStopEnabled:boolean = false;
+    var PlayStopEnabled:boolean = true;
     var PlayStopState:PlayStopStateType = PlayStopStateType.Play;
     var BoardDiv;
     var ResultTextDiv;
+    var ChessWorker = new Worker('../src/flyworker.js');
 
     // The chess board stores the history, but we need to be able to redo
     // moves that have been undone.
@@ -360,7 +363,7 @@ module FwDemo {
                 let div = document.getElementById(coords.source.selector);
                 AddClass(div, 'UserCanSelect');
             }
-        } else if (state == MoveStateType.SelectDest) {
+        } else if (state === MoveStateType.SelectDest) {
             for (let move of legal) {
                 let coords = MoveCoords(move);
                 if (coords.source.selector === SourceSquareInfo.selector) {
@@ -368,7 +371,12 @@ module FwDemo {
                     AddClass(div, 'UserCanSelect');
                 }
             }
+        } else if (state === MoveStateType.OpponentTurn) {
+            // Replace Play button with Stop button (revert to human player).
+            PlayStopState = PlayStopStateType.Stop;
         }
+
+        UpdatePlayControls();
     }
 
     function DrawResultText(result:Flywheel.GameResult):void {
@@ -395,6 +403,12 @@ module FwDemo {
         }
     }
 
+    function UpdatePlayControls():void {
+        document.getElementById('PrevTurnButton').setAttribute('src', PrevButtonImage(false));
+        document.getElementById('NextTurnButton').setAttribute('src', NextButtonImage(false));
+        document.getElementById('PlayPauseStopButton').setAttribute('src', PlayStopImage(false));
+    }
+
     function DrawBoard(board:Flywheel.Board):void {
         for (let y=0; y < 8; ++y) {
             let ry = RotateFlag ? (7 - y) : y;
@@ -410,10 +424,6 @@ module FwDemo {
 
         PrevTurnEnabled = board.CanPopMove();
         NextTurnEnabled = (GameHistoryIndex < GameHistory.length);
-
-        document.getElementById('PrevTurnButton').setAttribute('src', PrevButtonImage(false));
-        document.getElementById('NextTurnButton').setAttribute('src', NextButtonImage(false));
-        document.getElementById('PlayPauseStopButton').setAttribute('src', PlayStopImage(false));
 
         let result = board.GetGameResult();
         DrawResultText(result);
@@ -477,9 +487,16 @@ module FwDemo {
         }
     }
 
-    function CommitMove(move:Flywheel.Move):void {
-        TheBoard.PushMove(move);
-        if ((GameHistoryIndex < GameHistory.length) && move.Equals(GameHistory[GameHistoryIndex])) {
+    function CommitMove(move:Flywheel.Move | string):void {
+        var notation:string;
+        if (typeof move === 'string') {
+            TheBoard.PushNotation(move);
+            notation = move;
+        } else {
+            TheBoard.PushMove(move);
+            notation = move.toString();
+        }
+        if ((GameHistoryIndex < GameHistory.length) && (notation === GameHistory[GameHistoryIndex].toString())) {
             // Special case: treat this move as a redo, so don't disrupt the history.
             ++GameHistoryIndex;
         } else {
@@ -749,7 +766,11 @@ module FwDemo {
         var playPauseStopButton = document.getElementById('PlayPauseStopButton');
         playPauseStopButton.onclick = function(){
             if (PlayStopEnabled) {
-                // TODO: add code here to initiate AI thinking about the position.
+                SetMoveState(MoveStateType.OpponentTurn);
+                ChessWorker.onmessage = function(response) {
+                    CommitMove(response.data.bestMoveAlg);
+                }
+                ChessWorker.postMessage({verb:'Search', timeLimitInSeconds:3, game:TheBoard.AlgHistory()});
             }
         };
 

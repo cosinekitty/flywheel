@@ -29,53 +29,79 @@
 
 /// <reference path="flywheel.ts"/>
 
+'use strict';
+
+importScripts('flywheel.js');
+
 module FlyWorker {
-    export class Worker {
-        public static MateSearch(fen:string, game:string, limit:number):any {
-            let board:Flywheel.Board = new Flywheel.Board(fen);
+    export class SearchResponse {
+        public constructor(
+            public origin:any,
+            public bestPath:string,
+            public bestMoveAlg:string,
+            public score:number,
+            public nodes:number)
+        {
+        }
+    }
+
+    export class Adapter {
+        public static MateSearch(data:{fen:string, game:string, limit:number}):SearchResponse{
+            let board:Flywheel.Board = new Flywheel.Board(data.fen);
+            board.PushHistory(data.game);
             let thinker:Flywheel.Thinker = new Flywheel.Thinker();
-            board.PushHistory(game);
-            let bestPath:Flywheel.BestPath = thinker.MateSearch(board, limit);
-            return bestPath;
+            let bestPath:Flywheel.BestPath = thinker.MateSearch(board, data.limit);
+            return Adapter.MakeSearchResponse(data, bestPath);
+        }
+
+        public static Search(data:{fen:string, game:string, timeLimitInSeconds:number}):SearchResponse{
+            let board:Flywheel.Board = new Flywheel.Board(data.fen);
+            board.PushHistory(data.game);
+            let thinker:Flywheel.Thinker = new Flywheel.Thinker();
+            let bestPath:Flywheel.BestPath = thinker.Search(board, data.timeLimitInSeconds);
+            console.log(bestPath);
+            return Adapter.MakeSearchResponse(data, bestPath);
+        }
+
+        private static AlgebraicPath(bestPath:Flywheel.BestPath):string {
+            let algpath = '';
+            if (bestPath.move.length > 0) {
+                for (let move of bestPath.move) {
+                    if (algpath !== '') {
+                        algpath += ' ';
+                    }
+                    algpath += move.toString();
+                }
+            }
+            return algpath;
+        }
+
+        private static MakeSearchResponse(data:any, bestPath:Flywheel.BestPath):SearchResponse {
+            return {
+                origin: data,
+                bestPath: Adapter.AlgebraicPath(bestPath),
+                bestMoveAlg: bestPath.move[0].toString(),
+                score: bestPath.score,
+                nodes: bestPath.nodes
+            };
         }
     }
 }
 
-if (typeof importScripts === 'function') {
-    importScripts('flywheel.js');
+onmessage = function (message:MessageEvent) {
+    switch (message.data.verb) {
+        case 'ping':
+            console.log('ping ' + message.data.tag);
+            postMessage({origin: message.data, status: 'pong', tag: message.data.tag}, null);
+            break;
 
-    onmessage = function (message:MessageEvent) {
-        switch (message.data.verb) {
-            case 'ping':
-                postMessage({origin: message.data, status: 'pong', tag: message.data.tag}, null);
-                break;
+        case 'MateSearch':  // {verb:'MateSearch', game:'e2e4 e5e7 ...', limit:5, fen:...}
+            postMessage(FlyWorker.Adapter.MateSearch(message.data), null);
+            break;
 
-            case 'MateSearch':  // {verb:'MateSearch', game:'e2e4 e5e7 ...', limit:5, fen:...}
-                let bestPath:Flywheel.BestPath = FlyWorker.Worker.MateSearch(
-                    message.data.fen,
-                    message.data.game,
-                    message.data.limit);
-
-                let algpath = '';
-                let algmove = '';
-                if (bestPath.move.length > 0) {
-                    algmove = bestPath.move[0].toString();
-                    for (let move of bestPath.move) {
-                        if (algpath !== '') {
-                            algpath += ' ';
-                        }
-                        algpath += move.toString();
-                    }
-                }
-
-                postMessage({
-                    origin: message.data,
-                    bestPath: algpath,
-                    bestMove: algmove,
-                    score: bestPath.score,
-                    nodes: bestPath.nodes}, null);
-
-                break;
-        }
+        case 'Search':
+            console.log('Received Search');
+            postMessage(FlyWorker.Adapter.Search(message.data), null);
+            break;
     }
 }

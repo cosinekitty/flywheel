@@ -2013,6 +2013,51 @@ module Flywheel {
 
     export class Thinker {
         private nodesVisitedCounter:number = 0;
+        private targetTimeInMillis:number = 0;
+        private timeLimitReached:boolean = false;
+        private timePollCounter:number = 0;
+        private static readonly timePollLimit:number = 1;
+
+        private IsTimeLimitReached():boolean {
+            if (this.timeLimitReached) {
+                return true;
+            }
+
+            if (++this.timePollCounter >= Thinker.timePollLimit) {
+                this.timePollCounter = 0;
+                if (performance.now() >= this.targetTimeInMillis) {
+                    this.timeLimitReached = true;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private SetTimeLimit(timeLimitInSeconds:number):void {
+            this.timePollCounter = 0;
+            this.timeLimitReached = false;
+            this.targetTimeInMillis = performance.now() + (timeLimitInSeconds / 1000);
+        }
+
+        public Search(board:Board, timeLimitInSeconds:number):BestPath {
+            // Search for a forced checkmate with the specified search limit.
+            // First we must determine if the game is over, either because there
+            // are no legal moves, or because of the various types of non-stalemate draws.
+            this.SetTimeLimit(timeLimitInSeconds);
+            let bestPath:BestPath = new BestPath();
+            for (let limit=1; limit===1 || !this.IsTimeLimitReached(); ++limit) {
+                console.log('Search limit = %s', limit);
+                // FIXFIXFIX: omit moves that lead to forced loss from further consideration.
+                bestPath.score = this.InternalMateSearch(board, limit, 0, bestPath, Score.NegInf, Score.PosInf);
+                if (bestPath.score >= Score.ForcedWin) {
+                    break;
+                }
+            }
+
+            bestPath.nodes = this.nodesVisitedCounter;
+            return bestPath;
+        }
 
         public MateSearch(board:Board, maxLimit:number): BestPath {
             // Search for a forced checkmate with the specified search limit.

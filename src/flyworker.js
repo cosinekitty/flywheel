@@ -27,51 +27,78 @@
     SOFTWARE.
 */
 /// <reference path="flywheel.ts"/>
+'use strict';
+importScripts('flywheel.js');
 var FlyWorker;
 (function (FlyWorker) {
-    var Worker = (function () {
-        function Worker() {
+    var SearchResponse = (function () {
+        function SearchResponse(origin, bestPath, bestMoveAlg, score, nodes) {
+            this.origin = origin;
+            this.bestPath = bestPath;
+            this.bestMoveAlg = bestMoveAlg;
+            this.score = score;
+            this.nodes = nodes;
         }
-        Worker.MateSearch = function (fen, game, limit) {
-            var board = new Flywheel.Board(fen);
-            var thinker = new Flywheel.Thinker();
-            board.PushHistory(game);
-            var bestPath = thinker.MateSearch(board, limit);
-            return bestPath;
-        };
-        return Worker;
+        return SearchResponse;
     }());
-    FlyWorker.Worker = Worker;
-})(FlyWorker || (FlyWorker = {}));
-if (typeof importScripts === 'function') {
-    importScripts('flywheel.js');
-    onmessage = function (message) {
-        switch (message.data.verb) {
-            case 'ping':
-                postMessage({ origin: message.data, status: 'pong', tag: message.data.tag }, null);
-                break;
-            case 'MateSearch':
-                var bestPath = FlyWorker.Worker.MateSearch(message.data.fen, message.data.game, message.data.limit);
-                var algpath = '';
-                var algmove = '';
-                if (bestPath.move.length > 0) {
-                    algmove = bestPath.move[0].toString();
-                    for (var _i = 0, _a = bestPath.move; _i < _a.length; _i++) {
-                        var move = _a[_i];
-                        if (algpath !== '') {
-                            algpath += ' ';
-                        }
-                        algpath += move.toString();
-                    }
-                }
-                postMessage({
-                    origin: message.data,
-                    bestPath: algpath,
-                    bestMove: algmove,
-                    score: bestPath.score,
-                    nodes: bestPath.nodes }, null);
-                break;
+    FlyWorker.SearchResponse = SearchResponse;
+    var Adapter = (function () {
+        function Adapter() {
         }
-    };
-}
+        Adapter.MateSearch = function (data) {
+            var board = new Flywheel.Board(data.fen);
+            board.PushHistory(data.game);
+            var thinker = new Flywheel.Thinker();
+            var bestPath = thinker.MateSearch(board, data.limit);
+            return Adapter.MakeSearchResponse(data, bestPath);
+        };
+        Adapter.Search = function (data) {
+            var board = new Flywheel.Board(data.fen);
+            board.PushHistory(data.game);
+            var thinker = new Flywheel.Thinker();
+            var bestPath = thinker.Search(board, data.timeLimitInSeconds);
+            console.log(bestPath);
+            return Adapter.MakeSearchResponse(data, bestPath);
+        };
+        Adapter.AlgebraicPath = function (bestPath) {
+            var algpath = '';
+            if (bestPath.move.length > 0) {
+                for (var _i = 0, _a = bestPath.move; _i < _a.length; _i++) {
+                    var move = _a[_i];
+                    if (algpath !== '') {
+                        algpath += ' ';
+                    }
+                    algpath += move.toString();
+                }
+            }
+            return algpath;
+        };
+        Adapter.MakeSearchResponse = function (data, bestPath) {
+            return {
+                origin: data,
+                bestPath: Adapter.AlgebraicPath(bestPath),
+                bestMoveAlg: bestPath.move[0].toString(),
+                score: bestPath.score,
+                nodes: bestPath.nodes
+            };
+        };
+        return Adapter;
+    }());
+    FlyWorker.Adapter = Adapter;
+})(FlyWorker || (FlyWorker = {}));
+onmessage = function (message) {
+    switch (message.data.verb) {
+        case 'ping':
+            console.log('ping ' + message.data.tag);
+            postMessage({ origin: message.data, status: 'pong', tag: message.data.tag }, null);
+            break;
+        case 'MateSearch':
+            postMessage(FlyWorker.Adapter.MateSearch(message.data), null);
+            break;
+        case 'Search':
+            console.log('Received Search');
+            postMessage(FlyWorker.Adapter.Search(message.data), null);
+            break;
+    }
+};
 //# sourceMappingURL=flyworker.js.map

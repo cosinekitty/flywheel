@@ -1,3 +1,4 @@
+/// <reference path="../src/flywheel.ts"/>
 var FwDemo;
 (function (FwDemo) {
     'use strict';
@@ -26,10 +27,11 @@ var FwDemo;
     var BgPale = '#D4CEA3';
     var PrevTurnEnabled = false;
     var NextTurnEnabled = false;
-    var PlayStopEnabled = false;
+    var PlayStopEnabled = true;
     var PlayStopState = PlayStopStateType.Play;
     var BoardDiv;
     var ResultTextDiv;
+    var ChessWorker = new Worker('../src/flyworker.js');
     // The chess board stores the history, but we need to be able to redo
     // moves that have been undone.
     var GameHistory = [];
@@ -344,7 +346,7 @@ var FwDemo;
                 AddClass(div, 'UserCanSelect');
             }
         }
-        else if (state == MoveStateType.SelectDest) {
+        else if (state === MoveStateType.SelectDest) {
             for (var _a = 0, legal_2 = legal; _a < legal_2.length; _a++) {
                 var move = legal_2[_a];
                 var coords = MoveCoords(move);
@@ -354,6 +356,11 @@ var FwDemo;
                 }
             }
         }
+        else if (state === MoveStateType.OpponentTurn) {
+            // Replace Play button with Stop button (revert to human player).
+            PlayStopState = PlayStopStateType.Stop;
+        }
+        UpdatePlayControls();
     }
     function DrawResultText(result) {
         var rhtml;
@@ -376,6 +383,11 @@ var FwDemo;
             ResultTextDiv.style.display = 'none';
         }
     }
+    function UpdatePlayControls() {
+        document.getElementById('PrevTurnButton').setAttribute('src', PrevButtonImage(false));
+        document.getElementById('NextTurnButton').setAttribute('src', NextButtonImage(false));
+        document.getElementById('PlayPauseStopButton').setAttribute('src', PlayStopImage(false));
+    }
     function DrawBoard(board) {
         for (var y = 0; y < 8; ++y) {
             var ry = RotateFlag ? (7 - y) : y;
@@ -390,9 +402,6 @@ var FwDemo;
         }
         PrevTurnEnabled = board.CanPopMove();
         NextTurnEnabled = (GameHistoryIndex < GameHistory.length);
-        document.getElementById('PrevTurnButton').setAttribute('src', PrevButtonImage(false));
-        document.getElementById('NextTurnButton').setAttribute('src', NextButtonImage(false));
-        document.getElementById('PlayPauseStopButton').setAttribute('src', PlayStopImage(false));
         var result = board.GetGameResult();
         DrawResultText(result);
         if (result.status === Flywheel.GameStatus.InProgress) {
@@ -445,8 +454,16 @@ var FwDemo;
         }
     }
     function CommitMove(move) {
-        TheBoard.PushMove(move);
-        if ((GameHistoryIndex < GameHistory.length) && move.Equals(GameHistory[GameHistoryIndex])) {
+        var notation;
+        if (typeof move === 'string') {
+            TheBoard.PushNotation(move);
+            notation = move;
+        }
+        else {
+            TheBoard.PushMove(move);
+            notation = move.toString();
+        }
+        if ((GameHistoryIndex < GameHistory.length) && (notation === GameHistory[GameHistoryIndex].toString())) {
             // Special case: treat this move as a redo, so don't disrupt the history.
             ++GameHistoryIndex;
         }
@@ -680,6 +697,11 @@ var FwDemo;
         var playPauseStopButton = document.getElementById('PlayPauseStopButton');
         playPauseStopButton.onclick = function () {
             if (PlayStopEnabled) {
+                SetMoveState(MoveStateType.OpponentTurn);
+                ChessWorker.onmessage = function (response) {
+                    CommitMove(response.data.bestMoveAlg);
+                };
+                ChessWorker.postMessage({ verb: 'Search', timeLimitInSeconds: 3, game: TheBoard.AlgHistory() });
             }
         };
         playPauseStopButton.onmouseover = function () {

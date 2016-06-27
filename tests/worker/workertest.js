@@ -57,7 +57,7 @@ var FlyWorkerTest;
             var worker = Test.MakeWorker();
             worker.onmessage = function (response) {
                 var span = window.document.getElementById(response.data.origin.spanid);
-                var answer = response.data.bestMove;
+                var answer = response.data.bestMoveAlg;
                 if (answer === response.data.origin.correct) {
                     // Create a chess board and validate the path we got back leads to a checkmate.
                     var board = new Flywheel.Board(response.data.origin.fen);
