@@ -2055,7 +2055,6 @@ module Flywheel {
             this.SetTimeLimit(timeLimitInSeconds);
             let bestPath:BestPath = new BestPath();
             for (let limit=1; limit===1 || !this.IsTimeLimitReached(); ++limit) {
-                console.log('Search limit = %s', limit);
                 // FIXFIXFIX: omit moves that lead to forced loss from further consideration.
                 bestPath.score = this.InternalMateSearch(board, limit, 0, bestPath, Score.NegInf, Score.PosInf);
                 if (bestPath.score >= Score.ForcedWin) {

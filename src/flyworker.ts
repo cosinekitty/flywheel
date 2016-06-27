@@ -100,7 +100,6 @@ onmessage = function (message:MessageEvent) {
             break;
 
         case 'Search':
-            console.log('Received Search');
             postMessage(FlyWorker.Adapter.Search(message.data), null);
             break;
     }

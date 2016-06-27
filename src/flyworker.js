@@ -96,7 +96,6 @@ onmessage = function (message) {
             postMessage(FlyWorker.Adapter.MateSearch(message.data), null);
             break;
         case 'Search':
-            console.log('Received Search');
             postMessage(FlyWorker.Adapter.Search(message.data), null);
             break;
     }
