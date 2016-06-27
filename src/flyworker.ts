@@ -29,12 +29,12 @@
 
 /// <reference path="flywheel.ts"/>
 
-'use strict';
-
 importScripts('flywheel.js');
 
 module FlyWorker {
-    export class SearchResponse {
+    'use strict';
+
+    export class SearchResponse {       // FIXFIXFIX - make this an interface? Reasearch more about TypeScript...
         public constructor(
             public origin:any,
             public bestPath:string,
@@ -50,7 +50,8 @@ module FlyWorker {
             let board:Flywheel.Board = new Flywheel.Board(data.fen);
             board.PushHistory(data.game);
             let thinker:Flywheel.Thinker = new Flywheel.Thinker();
-            let bestPath:Flywheel.BestPath = thinker.MateSearch(board, data.limit);
+            thinker.SetMaxSearchLimit(data.limit);
+            let bestPath:Flywheel.BestPath = thinker.MateSearch(board);
             return Adapter.MakeSearchResponse(data, bestPath);
         }
 
@@ -58,8 +59,8 @@ module FlyWorker {
             let board:Flywheel.Board = new Flywheel.Board(data.fen);
             board.PushHistory(data.game);
             let thinker:Flywheel.Thinker = new Flywheel.Thinker();
-            let bestPath:Flywheel.BestPath = thinker.Search(board, data.timeLimitInSeconds);
-            console.log(bestPath);
+            thinker.SetTimeLimit(data.timeLimitInSeconds);
+            let bestPath:Flywheel.BestPath = thinker.Search(board);
             return Adapter.MakeSearchResponse(data, bestPath);
         }
 
@@ -89,9 +90,10 @@ module FlyWorker {
 }
 
 onmessage = function (message:MessageEvent) {
+    'use strict';
+
     switch (message.data.verb) {
         case 'ping':
-            console.log('ping ' + message.data.tag);
             postMessage({origin: message.data, status: 'pong', tag: message.data.tag}, null);
             break;
 

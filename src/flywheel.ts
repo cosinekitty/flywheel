@@ -26,6 +26,25 @@
 */
 
 module Flywheel {
+    export class FlyException extends Error {
+        // http://stackoverflow.com/questions/12915412/how-do-i-extend-a-host-object-e-g-error-in-typescript
+        // https://github.com/Microsoft/TypeScript/issues/1168
+        constructor(public message:string) {
+            super();
+            this.name = 'FlyException';
+            this.message = message;
+            (<any>this).stack = (<any>new Error()).stack;
+        }
+    }
+
+    class SearchAbortedException extends FlyException {
+        constructor(message:string) {
+            super(message);
+            this.name = 'SearchAbortedException';
+            //console.log(message);
+        }
+    }
+
     export enum Square {
         Empty,
         WhitePawn,  WhiteKnight,  WhiteBishop,  WhiteRook,  WhiteQueen,  WhiteKing,
@@ -2013,73 +2032,94 @@ module Flywheel {
 
     export class Thinker {
         private nodesVisitedCounter:number = 0;
+        private maxSearchLimit:number = null;
         private targetTimeInMillis:number = null;
-        private timeLimitReached:boolean = false;
         private timePollCounter:number = 0;
         private static readonly timePollLimit:number = 1;
 
-        private IsTimeLimitReached():boolean {
-            if (this.timeLimitReached) {
-                return true;
+        private CheckSearchAborted(limit:number):void {
+            if (limit <= 1) {
+                return;   // Never abort a search that has not completed first level!
+            }
+
+            if (this.maxSearchLimit !== null) {
+                if (limit > this.maxSearchLimit) {
+                    throw new SearchAbortedException(`Exceeded search depth limit = ${this.maxSearchLimit}`);
+                }
             }
 
             if (this.targetTimeInMillis !== null) {
                 if (++this.timePollCounter >= Thinker.timePollLimit) {
                     this.timePollCounter = 0;
-                    if (performance.now() >= this.targetTimeInMillis) {
-                        this.timeLimitReached = true;
-                        return true;
+                    var now = performance.now();
+                    if (now >= this.targetTimeInMillis) {
+                        throw new SearchAbortedException(`Search time limit exceeded at time ${now}; excess = ${now - this.targetTimeInMillis}`);
                     }
                 }
             }
-
-            return false;
         }
 
-        private SetTimeLimit(timeLimitInSeconds:number):void {
-            this.timePollCounter = 0;
-            this.timeLimitReached = false;
-            this.targetTimeInMillis = performance.now() + (1000 * timeLimitInSeconds);
+        public SetMaxSearchLimit(maxLimit:number):void {
+            this.ResetSearchLimit();
+            this.maxSearchLimit = maxLimit;
         }
 
-        private CancelTimeLimit():void {
-            this.timePollCounter = 0;
-            this.timeLimitReached = false;
+        public SetTimeLimit(timeLimitInSeconds:number):void {
+            var now = performance.now();
+            this.ResetSearchLimit();
+            this.targetTimeInMillis = now + (1000 * timeLimitInSeconds);
+            //console.log(`SetTimeLimit called at ${now}, target = ${this.targetTimeInMillis}`);
+        }
+
+        private ResetSearchLimit():void {
             this.targetTimeInMillis = null;
+            this.timePollCounter = 0;
+            this.maxSearchLimit = null;
         }
 
-        public Search(board:Board, timeLimitInSeconds:number):BestPath {
-            // Search for a forced checkmate with the specified search limit.
-            // First we must determine if the game is over, either because there
-            // are no legal moves, or because of the various types of non-stalemate draws.
-            this.SetTimeLimit(timeLimitInSeconds);
-            let bestPath:BestPath = new BestPath();
-            for (let limit=1; limit===1 || !this.IsTimeLimitReached(); ++limit) {
-                // FIXFIXFIX: omit moves that lead to forced loss from further consideration.
-                bestPath.score = this.InternalMateSearch(board, limit, 0, bestPath, Score.NegInf, Score.PosInf);
-                if (bestPath.score >= Score.ForcedWin) {
-                    break;
+        public Search(board:Board):BestPath {
+            var bestPath:BestPath = null;
+            var searching = true;
+            for (var limit=1; searching; ++limit) {
+                try {
+                    var nextBestPath:BestPath = new BestPath();
+                    nextBestPath.score = this.InternalMateSearch(board, limit, 0, nextBestPath, Score.NegInf, Score.PosInf);
+                    bestPath = nextBestPath;    // search was not yet aborted via exception, so update best path
+                    if (bestPath.score >= Score.ForcedWin) {
+                        break;
+                    }
+                } catch (ex) {
+                    if (ex instanceof SearchAbortedException) {
+                        searching = false;  // This is not an error; it is the normal way a search is terminated.
+                    } else {
+                        throw ex;   // This really is an error, so bubble the exception up!
+                    }
                 }
             }
-            this.CancelTimeLimit();
             bestPath.nodes = this.nodesVisitedCounter;
             return bestPath;
         }
 
-        public MateSearch(board:Board, maxLimit:number): BestPath {
-            // Search for a forced checkmate with the specified search limit.
-            // First we must determine if the game is over, either because there
-            // are no legal moves, or because of the various types of non-stalemate draws.
-            let bestPath:BestPath = new BestPath();
-
-            for (let limit=1; limit <= maxLimit; ++limit) {
-                // FIXFIXFIX: omit moves that lead to forced loss from further consideration.
-                bestPath.score = this.InternalMateSearch(board, limit, 0, bestPath, Score.NegInf, Score.PosInf);
-                if (bestPath.score >= Score.ForcedWin) {
-                    break;
+        public MateSearch(board:Board): BestPath {
+            // Search for a forced checkmate.
+            var bestPath:BestPath = null;
+            var searching = true;
+            for (var limit=1; searching; ++limit) {
+                try {
+                    var nextBestPath:BestPath = new BestPath();
+                    nextBestPath.score = this.InternalMateSearch(board, limit, 0, nextBestPath, Score.NegInf, Score.PosInf);
+                    bestPath = nextBestPath;    // search was not yet aborted via exception, so update best path
+                    if (bestPath.score >= Score.ForcedWin) {
+                        break;
+                    }
+                } catch (ex) {
+                    if (ex instanceof SearchAbortedException) {
+                        searching = false;  // This is not an error; it is the normal way a search is terminated.
+                    } else {
+                        throw ex;   // This really is an error, so bubble the exception up!
+                    }
                 }
             }
-
             bestPath.nodes = this.nodesVisitedCounter;
             return bestPath;
         }
@@ -2102,7 +2142,9 @@ module Flywheel {
             depth:number,
             bestPath:BestPath,
             alpha:Score,
-            beta:Score): Score {
+            beta:Score): Score
+        {
+            this.CheckSearchAborted(limit);
 
             ++this.nodesVisitedCounter;
 

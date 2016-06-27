@@ -27,10 +27,10 @@
     SOFTWARE.
 */
 /// <reference path="flywheel.ts"/>
-'use strict';
 importScripts('flywheel.js');
 var FlyWorker;
 (function (FlyWorker) {
+    'use strict';
     var SearchResponse = (function () {
         function SearchResponse(origin, bestPath, bestMoveAlg, score, nodes) {
             this.origin = origin;
@@ -49,15 +49,16 @@ var FlyWorker;
             var board = new Flywheel.Board(data.fen);
             board.PushHistory(data.game);
             var thinker = new Flywheel.Thinker();
-            var bestPath = thinker.MateSearch(board, data.limit);
+            thinker.SetMaxSearchLimit(data.limit);
+            var bestPath = thinker.MateSearch(board);
             return Adapter.MakeSearchResponse(data, bestPath);
         };
         Adapter.Search = function (data) {
             var board = new Flywheel.Board(data.fen);
             board.PushHistory(data.game);
             var thinker = new Flywheel.Thinker();
-            var bestPath = thinker.Search(board, data.timeLimitInSeconds);
-            console.log(bestPath);
+            thinker.SetTimeLimit(data.timeLimitInSeconds);
+            var bestPath = thinker.Search(board);
             return Adapter.MakeSearchResponse(data, bestPath);
         };
         Adapter.AlgebraicPath = function (bestPath) {
@@ -87,9 +88,9 @@ var FlyWorker;
     FlyWorker.Adapter = Adapter;
 })(FlyWorker || (FlyWorker = {}));
 onmessage = function (message) {
+    'use strict';
     switch (message.data.verb) {
         case 'ping':
-            console.log('ping ' + message.data.tag);
             postMessage({ origin: message.data, status: 'pong', tag: message.data.tag }, null);
             break;
         case 'MateSearch':

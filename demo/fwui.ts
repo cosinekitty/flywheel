@@ -770,7 +770,7 @@ module FwDemo {
                 ChessWorker.onmessage = function(response) {
                     CommitMove(response.data.bestMoveAlg);
                 }
-                ChessWorker.postMessage({verb:'Search', timeLimitInSeconds:3, game:TheBoard.AlgHistory()});
+                ChessWorker.postMessage({verb:'Search', timeLimitInSeconds:2, game:TheBoard.AlgHistory()});
             }
         };
 

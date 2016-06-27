@@ -24,8 +24,36 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 */
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
 var Flywheel;
 (function (Flywheel) {
+    var FlyException = (function (_super) {
+        __extends(FlyException, _super);
+        // http://stackoverflow.com/questions/12915412/how-do-i-extend-a-host-object-e-g-error-in-typescript
+        // https://github.com/Microsoft/TypeScript/issues/1168
+        function FlyException(message) {
+            _super.call(this);
+            this.message = message;
+            this.name = 'FlyException';
+            this.message = message;
+            this.stack = (new Error()).stack;
+        }
+        return FlyException;
+    }(Error));
+    Flywheel.FlyException = FlyException;
+    var SearchAbortedException = (function (_super) {
+        __extends(SearchAbortedException, _super);
+        function SearchAbortedException(message) {
+            _super.call(this, message);
+            this.name = 'SearchAbortedException';
+            //console.log(message);
+        }
+        return SearchAbortedException;
+    }(FlyException));
     (function (Square) {
         Square[Square["Empty"] = 0] = "Empty";
         Square[Square["WhitePawn"] = 1] = "WhitePawn";
@@ -1913,62 +1941,88 @@ var Flywheel;
     var Thinker = (function () {
         function Thinker() {
             this.nodesVisitedCounter = 0;
+            this.maxSearchLimit = null;
             this.targetTimeInMillis = null;
-            this.timeLimitReached = false;
             this.timePollCounter = 0;
         }
-        Thinker.prototype.IsTimeLimitReached = function () {
-            if (this.timeLimitReached) {
-                return true;
+        Thinker.prototype.CheckSearchAborted = function (limit) {
+            if (limit <= 1) {
+                return; // Never abort a search that has not completed first level!
+            }
+            if (this.maxSearchLimit !== null) {
+                if (limit > this.maxSearchLimit) {
+                    throw new SearchAbortedException("Exceeded search depth limit = " + this.maxSearchLimit);
+                }
             }
             if (this.targetTimeInMillis !== null) {
                 if (++this.timePollCounter >= Thinker.timePollLimit) {
                     this.timePollCounter = 0;
-                    if (performance.now() >= this.targetTimeInMillis) {
-                        this.timeLimitReached = true;
-                        return true;
+                    var now = performance.now();
+                    if (now >= this.targetTimeInMillis) {
+                        throw new SearchAbortedException("Search time limit exceeded at time " + now + "; excess = " + (now - this.targetTimeInMillis));
                     }
                 }
             }
-            return false;
+        };
+        Thinker.prototype.SetMaxSearchLimit = function (maxLimit) {
+            this.ResetSearchLimit();
+            this.maxSearchLimit = maxLimit;
         };
         Thinker.prototype.SetTimeLimit = function (timeLimitInSeconds) {
-            this.timePollCounter = 0;
-            this.timeLimitReached = false;
-            this.targetTimeInMillis = performance.now() + (1000 * timeLimitInSeconds);
+            var now = performance.now();
+            this.ResetSearchLimit();
+            this.targetTimeInMillis = now + (1000 * timeLimitInSeconds);
+            //console.log(`SetTimeLimit called at ${now}, target = ${this.targetTimeInMillis}`);
         };
-        Thinker.prototype.CancelTimeLimit = function () {
-            this.timePollCounter = 0;
-            this.timeLimitReached = false;
+        Thinker.prototype.ResetSearchLimit = function () {
             this.targetTimeInMillis = null;
+            this.timePollCounter = 0;
+            this.maxSearchLimit = null;
         };
-        Thinker.prototype.Search = function (board, timeLimitInSeconds) {
-            // Search for a forced checkmate with the specified search limit.
-            // First we must determine if the game is over, either because there
-            // are no legal moves, or because of the various types of non-stalemate draws.
-            this.SetTimeLimit(timeLimitInSeconds);
-            var bestPath = new BestPath();
-            for (var limit = 1; limit === 1 || !this.IsTimeLimitReached(); ++limit) {
-                // FIXFIXFIX: omit moves that lead to forced loss from further consideration.
-                bestPath.score = this.InternalMateSearch(board, limit, 0, bestPath, Score.NegInf, Score.PosInf);
-                if (bestPath.score >= Score.ForcedWin) {
-                    break;
+        Thinker.prototype.Search = function (board) {
+            var bestPath = null;
+            var searching = true;
+            for (var limit = 1; searching; ++limit) {
+                try {
+                    var nextBestPath = new BestPath();
+                    nextBestPath.score = this.InternalMateSearch(board, limit, 0, nextBestPath, Score.NegInf, Score.PosInf);
+                    bestPath = nextBestPath; // search was not yet aborted via exception, so update best path
+                    if (bestPath.score >= Score.ForcedWin) {
+                        break;
+                    }
+                }
+                catch (ex) {
+                    if (ex instanceof SearchAbortedException) {
+                        searching = false; // This is not an error; it is the normal way a search is terminated.
+                    }
+                    else {
+                        throw ex; // This really is an error, so bubble the exception up!
+                    }
                 }
             }
-            this.CancelTimeLimit();
             bestPath.nodes = this.nodesVisitedCounter;
             return bestPath;
         };
-        Thinker.prototype.MateSearch = function (board, maxLimit) {
-            // Search for a forced checkmate with the specified search limit.
-            // First we must determine if the game is over, either because there
-            // are no legal moves, or because of the various types of non-stalemate draws.
-            var bestPath = new BestPath();
-            for (var limit = 1; limit <= maxLimit; ++limit) {
-                // FIXFIXFIX: omit moves that lead to forced loss from further consideration.
-                bestPath.score = this.InternalMateSearch(board, limit, 0, bestPath, Score.NegInf, Score.PosInf);
-                if (bestPath.score >= Score.ForcedWin) {
-                    break;
+        Thinker.prototype.MateSearch = function (board) {
+            // Search for a forced checkmate.
+            var bestPath = null;
+            var searching = true;
+            for (var limit = 1; searching; ++limit) {
+                try {
+                    var nextBestPath = new BestPath();
+                    nextBestPath.score = this.InternalMateSearch(board, limit, 0, nextBestPath, Score.NegInf, Score.PosInf);
+                    bestPath = nextBestPath; // search was not yet aborted via exception, so update best path
+                    if (bestPath.score >= Score.ForcedWin) {
+                        break;
+                    }
+                }
+                catch (ex) {
+                    if (ex instanceof SearchAbortedException) {
+                        searching = false; // This is not an error; it is the normal way a search is terminated.
+                    }
+                    else {
+                        throw ex; // This really is an error, so bubble the exception up!
+                    }
                 }
             }
             bestPath.nodes = this.nodesVisitedCounter;
@@ -1986,6 +2040,7 @@ var Flywheel;
             return 0;
         };
         Thinker.prototype.InternalMateSearch = function (board, limit, depth, bestPath, alpha, beta) {
+            this.CheckSearchAborted(limit);
             ++this.nodesVisitedCounter;
             bestPath.Truncate();
             if (depth >= limit) {
