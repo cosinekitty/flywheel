@@ -35,22 +35,25 @@ var Flywheel;
         __extends(FlyException, _super);
         // http://stackoverflow.com/questions/12915412/how-do-i-extend-a-host-object-e-g-error-in-typescript
         // https://github.com/Microsoft/TypeScript/issues/1168
-        function FlyException(message) {
+        function FlyException(message, name) {
             _super.call(this);
             this.message = message;
-            this.name = 'FlyException';
-            this.message = message;
+            this.name = name;
             this.stack = (new Error()).stack;
         }
         return FlyException;
     }(Error));
-    Flywheel.FlyException = FlyException;
+    var FlywheelError = (function (_super) {
+        __extends(FlywheelError, _super);
+        function FlywheelError(message) {
+            _super.call(this, message, 'FlywheelError');
+        }
+        return FlywheelError;
+    }(FlyException));
     var SearchAbortedException = (function (_super) {
         __extends(SearchAbortedException, _super);
         function SearchAbortedException(message) {
-            _super.call(this, message);
-            this.name = 'SearchAbortedException';
-            //console.log(message);
+            _super.call(this, message, 'SearchAbortedException');
         }
         return SearchAbortedException;
     }(FlyException));
@@ -137,7 +140,7 @@ var Flywheel;
                 case Square.BlackQueen: return 'q';
                 case Square.BlackKing: return 'k';
                 default:
-                    throw 'Invalid square contents: ' + p;
+                    throw new FlywheelError("Invalid square contents: " + p);
             }
         };
         Utility.UnsidedPieceCharacter = function (p) {
@@ -153,7 +156,7 @@ var Flywheel;
                 case NeutralPiece.Queen: return 'Q';
                 case NeutralPiece.King: return 'K';
                 default:
-                    throw 'Invalid neutral piece: ' + p;
+                    throw new FlywheelError("Invalid neutral piece: " + p);
             }
         };
         Utility.IsInitialized = Utility.StaticInit();
@@ -201,7 +204,7 @@ var Flywheel;
                 case NeutralPiece.Knight:
                     notation += 'n';
                     break;
-                default: throw 'Invalid pawn promotion piece ' + this.prom;
+                default: throw new FlywheelError("Invalid pawn promotion piece " + this.prom);
             }
             return notation;
         };
@@ -341,21 +344,21 @@ var Flywheel;
         Board.Offset = function (alg) {
             var ofs = Board.OffsetTable[alg];
             if (!ofs) {
-                throw "Invalid algebraic location '" + alg + "': must be 'a1'..'h8'.";
+                throw new FlywheelError("Invalid algebraic location \"" + alg + "\" : must be \"a1\"..\"h8\".");
             }
             return ofs;
         };
         Board.Algebraic = function (ofs) {
             var alg = Board.AlgTable[ofs];
             if (!alg) {
-                throw "Invalid board offset " + ofs;
+                throw new FlywheelError("Invalid board offset " + ofs);
             }
             return alg;
         };
         Board.GetRankNumber = function (ofs) {
             var rank = Board.RankNumber[ofs];
             if (!rank) {
-                throw "Invalid board offset " + ofs;
+                throw new FlywheelError("Invalid board offset " + ofs);
             }
             return rank;
         };
@@ -365,11 +368,11 @@ var Flywheel;
         Board.GetSidedPiece = function (side, neut) {
             var pieceArray = Utility.SidePieces[side];
             if (!pieceArray) {
-                throw "Invalid side " + side;
+                throw new FlywheelError("Invalid side " + side);
             }
             var piece = pieceArray[neut];
             if (!piece) {
-                throw "Invalid neutral piece " + neut;
+                throw new FlywheelError("Invalid neutral piece " + neut);
             }
             return piece;
         };
@@ -389,7 +392,7 @@ var Flywheel;
         };
         Board.prototype.GetSquareByCoords = function (x, y) {
             if (x !== (x & 7) || y !== (y & 7)) {
-                throw 'Invalid chess board coordinates';
+                throw new FlywheelError("Invalid chess board coordinates x=" + x + ", y=" + y);
             }
             return this.square[21 + x + (10 * y)];
         };
@@ -808,7 +811,7 @@ var Flywheel;
             if (callDepth > 0) {
                 return false; // we want the topmost recursive caller to report an error on the original notation
             }
-            throw 'Move notation is not valid/legal: "' + notation + '"';
+            throw new FlywheelError("Move notation is not valid/legal: \"" + notation + "\"");
         };
         Board.prototype.PushHistory = function (history) {
             if (history) {
@@ -856,7 +859,7 @@ var Flywheel;
             // Before risking corruption of the board state, verify
             // that the move passed in pertains to the same board position it was generated for.
             if (move.hash_a !== this.hash.a) {
-                throw 'Move was generated for a different board position.';
+                throw new FlywheelError('Move was generated for a different board position.');
             }
             // Store current hash value before modifying it.
             var info = new MoveState();
@@ -1009,13 +1012,13 @@ var Flywheel;
                 // This really slows things down, but validates that the hash function is working correctly.
                 var checkHash = this.CalcHash();
                 if (!checkHash.Equals(this.hash)) {
-                    throw 'Hash mismatch in PushMove()';
+                    throw new FlywheelError('Hash mismatch in PushMove()');
                 }
             }
         };
         Board.prototype.PopMove = function () {
             if (this.moveStack.length === 0) {
-                throw 'PopMove: move stack is empty!';
+                throw new FlywheelError('PopMove: move stack is empty!');
             }
             var info = this.moveStack.pop();
             // Reverse the actions we performed in PushMove().
@@ -1401,7 +1404,7 @@ var Flywheel;
                     }
                 }
                 else {
-                    throw 'Invalid en passant target offset = ' + epTarget + ' (' + Board.AlgTable[epTarget] + ')';
+                    throw new FlywheelError("Invalid en passant target offset = " + epTarget + " (" + Board.AlgTable[epTarget] + ")");
                 }
             }
             return null;
@@ -1423,7 +1426,7 @@ var Flywheel;
                 var ofs = _a[_i];
                 var s = this.square[ofs];
                 if (Utility.Neutral[s] === undefined) {
-                    throw 'Invalid board contents at ' + Board.AlgTable[ofs];
+                    throw new FlywheelError("Invalid board contents at " + Board.AlgTable[ofs]);
                 }
                 ++inventory[s];
                 switch (s) {
@@ -1432,7 +1435,7 @@ var Flywheel;
                             this.whiteKingOfs = ofs;
                         }
                         else {
-                            throw 'Found more than one White King on the board.';
+                            throw new FlywheelError('Found more than one White King on the board.');
                         }
                         break;
                     case Square.BlackKing:
@@ -1440,27 +1443,27 @@ var Flywheel;
                             this.blackKingOfs = ofs;
                         }
                         else {
-                            throw 'Found more than one Black King on the board.';
+                            throw new FlywheelError('Found more than one Black King on the board.');
                         }
                         break;
                     case Square.WhitePawn:
                     case Square.BlackPawn:
                         if (Board.RankNumber[ofs] === 1 || Board.RankNumber[ofs] === 8) {
-                            throw 'Pawns are not allowed on ranks 1 or 8.';
+                            throw new FlywheelError('Pawns are not allowed on ranks 1 or 8.');
                         }
                         break;
                 }
             }
             if (this.whiteKingOfs === undefined) {
-                throw 'There is no White King on the board.';
+                throw new FlywheelError('There is no White King on the board.');
             }
             if (this.blackKingOfs === undefined) {
-                throw 'There is no Black King on the board.';
+                throw new FlywheelError('There is no Black King on the board.');
             }
             Board.ValidateInventory(inventory, Side.White);
             Board.ValidateInventory(inventory, Side.Black);
             if (this.IsPlayerInCheck(this.enemy)) {
-                throw 'Illegal position: side not having the turn is in check.';
+                throw new FlywheelError('Illegal position: side not having the turn is in check.');
             }
             this.epFile = this.GetEnPassantFile(this.epTarget);
             this.hash = this.CalcHash();
@@ -1475,25 +1478,25 @@ var Flywheel;
             var Q = inventory[Utility.SidePieces[side][NeutralPiece.Queen]];
             var stext = (side === Side.White) ? 'White' : 'Black';
             if (P > 8) {
-                throw 'Cannot have more than 8 ' + stext + ' pawns on the board.';
+                throw new FlywheelError("Cannot have more than 8 " + stext + " pawns on the board.");
             }
             if (N > 10) {
-                throw 'Cannot have more than 10 ' + stext + ' knights on the board.';
+                throw new FlywheelError("Cannot have more than 10 " + stext + " knights on the board.");
             }
             if (B > 10) {
-                throw 'Cannot have more than 10 ' + stext + ' bishops on the board.';
+                throw new FlywheelError("Cannot have more than 10 " + stext + " bishops on the board.");
             }
             if (R > 10) {
-                throw 'Cannot have more than 10 ' + stext + ' rooks on the board.';
+                throw new FlywheelError("Cannot have more than 10 " + stext + " rooks on the board.");
             }
             if (Q > 9) {
-                throw 'Cannot have more than 9 ' + stext + ' queens on the board.';
+                throw new FlywheelError("Cannot have more than 9 " + stext + " queens on the board.");
             }
             // If all 8 pawns are promoted, then there can be a maximum of 15
             // non-pawns per side.  So total pawns + total non-pawns (ignoring kings)
             // must never exceed 15.
             if (P + N + B + R + Q > 15) {
-                throw 'Cannot have more than 16 ' + stext + ' pieces on the board.';
+                throw new FlywheelError("Cannot have more than 16 " + stext + " pieces on the board.");
             }
         };
         Board.prototype.GetForsythEdwardsNotation = function () {
@@ -1622,11 +1625,11 @@ var Flywheel;
             // 3qr2k/pbpp2pp/1p5N/3Q2b1/2P1P3/P7/1PP2PPP/R4RK1 w - - 0 1
             var field = fen.split(' ');
             if (field.length != 6) {
-                throw "FEN must have 6 space-delimited fields.";
+                throw new FlywheelError('FEN must have 6 space-delimited fields.');
             }
             var rowArray = field[0].split('/');
             if (rowArray.length != 8) {
-                throw "FEN board must have 8 slash-delimited rows.";
+                throw new FlywheelError('FEN board must have 8 slash-delimited rows.');
             }
             var newsq = Board.MakeBoardArray();
             for (var y = 0; y < 8; ++y) {
@@ -1696,11 +1699,11 @@ var Flywheel;
                         case 'K':
                             piece = Square.WhiteKing;
                             break;
-                        default: throw 'Invalid character in FEN board';
+                        default: throw new FlywheelError('Invalid character in FEN board');
                     }
                     while (repeat > 0) {
                         if (x > 7) {
-                            throw 'Too many squares in FEN row';
+                            throw new FlywheelError('Too many squares in FEN row');
                         }
                         newsq[21 + (10 * y) + x] = piece;
                         ++x;
@@ -1708,7 +1711,7 @@ var Flywheel;
                     }
                 }
                 if (x !== 8) {
-                    throw 'There must be exactly 8 squares on each row of the FEN.';
+                    throw new FlywheelError('There must be exactly 8 squares on each row of the FEN.');
                 }
             }
             var friend;
@@ -1723,12 +1726,12 @@ var Flywheel;
                     enemy = Side.White;
                     break;
                 default:
-                    throw 'Side specifier must be "w" or "b" in FEN.';
+                    throw new FlywheelError('Side specifier must be "w" or "b" in FEN.');
             }
             // Parse castle enable flags.
             var castling = field[2];
             if (castling.length === 0 || !/-|K?Q?k?q?/.test(castling)) {
-                throw 'Invalid castling specifier in FEN.';
+                throw new FlywheelError('Invalid castling specifier in FEN.');
             }
             var wk = (castling.indexOf('K') >= 0);
             var wq = (castling.indexOf('Q') >= 0);
@@ -1742,18 +1745,18 @@ var Flywheel;
                     ep = Board.Offset(field[3]);
                 }
                 else {
-                    throw 'Invalid en passant target in FEN.';
+                    throw new FlywheelError('Invalid en passant target in FEN.');
                 }
             }
             // Parse halfmove clock.
             var quietPlies = parseInt(field[4], 10);
             if (isNaN(quietPlies) || quietPlies < 0 || quietPlies > 100) {
-                throw 'Invalid halfmove clock (number of quiet plies) in FEN.';
+                throw new FlywheelError('Invalid halfmove clock (number of quiet plies) in FEN.');
             }
             // Parse fullmove number.
             var fullMoveNumber = parseInt(field[5], 10);
             if (isNaN(fullMoveNumber) || fullMoveNumber < 1) {
-                throw 'Invalid fullmove number in FEN.';
+                throw new FlywheelError('Invalid fullmove number in FEN.');
             }
             // If we get here, it means the FEN is presumed valid.
             // Mutate the board based on what we found.
@@ -1785,7 +1788,7 @@ var Flywheel;
             if (!Board.IsLegal(move, legalMoveList)) {
                 // It is important to prevent board corruption.
                 // PushMove/PopMove can leave the board in a mangled state if the move is illegal.
-                throw 'Illegal move passed to PgnFormat';
+                throw new FlywheelError('Illegal move passed to PgnFormat');
             }
             var pgn = '';
             this.PushMove(move);
@@ -1830,7 +1833,7 @@ var Flywheel;
                 }
                 // compact now contains moves to same dest by same piece (with same promotion if promotion)
                 if (compact.length === 0) {
-                    throw 'PGN compactor found 0 moves'; // should have been caught by legal move check above!
+                    throw new FlywheelError('PGN compactor found 0 moves'); // should have been caught by legal move check above!
                 }
                 var needSourceFile = false;
                 var needSourceRank = false;
