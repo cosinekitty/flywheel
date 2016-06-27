@@ -1913,7 +1913,7 @@ var Flywheel;
     var Thinker = (function () {
         function Thinker() {
             this.nodesVisitedCounter = 0;
-            this.targetTimeInMillis = 0;
+            this.targetTimeInMillis = null;
             this.timeLimitReached = false;
             this.timePollCounter = 0;
         }
@@ -1921,11 +1921,13 @@ var Flywheel;
             if (this.timeLimitReached) {
                 return true;
             }
-            if (++this.timePollCounter >= Thinker.timePollLimit) {
-                this.timePollCounter = 0;
-                if (performance.now() >= this.targetTimeInMillis) {
-                    this.timeLimitReached = true;
-                    return true;
+            if (this.targetTimeInMillis !== null) {
+                if (++this.timePollCounter >= Thinker.timePollLimit) {
+                    this.timePollCounter = 0;
+                    if (performance.now() >= this.targetTimeInMillis) {
+                        this.timeLimitReached = true;
+                        return true;
+                    }
                 }
             }
             return false;
@@ -1933,7 +1935,12 @@ var Flywheel;
         Thinker.prototype.SetTimeLimit = function (timeLimitInSeconds) {
             this.timePollCounter = 0;
             this.timeLimitReached = false;
-            this.targetTimeInMillis = performance.now() + (timeLimitInSeconds / 1000);
+            this.targetTimeInMillis = performance.now() + (1000 * timeLimitInSeconds);
+        };
+        Thinker.prototype.CancelTimeLimit = function () {
+            this.timePollCounter = 0;
+            this.timeLimitReached = false;
+            this.targetTimeInMillis = null;
         };
         Thinker.prototype.Search = function (board, timeLimitInSeconds) {
             // Search for a forced checkmate with the specified search limit.
@@ -1949,6 +1956,7 @@ var Flywheel;
                     break;
                 }
             }
+            this.CancelTimeLimit();
             bestPath.nodes = this.nodesVisitedCounter;
             return bestPath;
         };

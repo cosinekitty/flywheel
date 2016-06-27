@@ -2013,7 +2013,7 @@ module Flywheel {
 
     export class Thinker {
         private nodesVisitedCounter:number = 0;
-        private targetTimeInMillis:number = 0;
+        private targetTimeInMillis:number = null;
         private timeLimitReached:boolean = false;
         private timePollCounter:number = 0;
         private static readonly timePollLimit:number = 1;
@@ -2023,11 +2023,13 @@ module Flywheel {
                 return true;
             }
 
-            if (++this.timePollCounter >= Thinker.timePollLimit) {
-                this.timePollCounter = 0;
-                if (performance.now() >= this.targetTimeInMillis) {
-                    this.timeLimitReached = true;
-                    return true;
+            if (this.targetTimeInMillis !== null) {
+                if (++this.timePollCounter >= Thinker.timePollLimit) {
+                    this.timePollCounter = 0;
+                    if (performance.now() >= this.targetTimeInMillis) {
+                        this.timeLimitReached = true;
+                        return true;
+                    }
                 }
             }
 
@@ -2037,7 +2039,13 @@ module Flywheel {
         private SetTimeLimit(timeLimitInSeconds:number):void {
             this.timePollCounter = 0;
             this.timeLimitReached = false;
-            this.targetTimeInMillis = performance.now() + (timeLimitInSeconds / 1000);
+            this.targetTimeInMillis = performance.now() + (1000 * timeLimitInSeconds);
+        }
+
+        private CancelTimeLimit():void {
+            this.timePollCounter = 0;
+            this.timeLimitReached = false;
+            this.targetTimeInMillis = null;
         }
 
         public Search(board:Board, timeLimitInSeconds:number):BestPath {
@@ -2054,7 +2062,7 @@ module Flywheel {
                     break;
                 }
             }
-
+            this.CancelTimeLimit();
             bestPath.nodes = this.nodesVisitedCounter;
             return bestPath;
         }
