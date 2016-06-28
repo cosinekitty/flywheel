@@ -18,6 +18,12 @@ var FwDemo;
         PlayStopStateType[PlayStopStateType["Pause"] = 2] = "Pause";
     })(PlayStopStateType || (PlayStopStateType = {}));
     ;
+    var PlayerType;
+    (function (PlayerType) {
+        PlayerType[PlayerType["Human"] = 0] = "Human";
+        PlayerType[PlayerType["Computer"] = 1] = "Computer";
+    })(PlayerType || (PlayerType = {}));
+    ;
     var SquarePixels = 70;
     var TheBoard = new Flywheel.Board();
     var RotateFlag = false;
@@ -31,7 +37,13 @@ var FwDemo;
     var PlayStopState = PlayStopStateType.Play;
     var BoardDiv;
     var ResultTextDiv;
-    var ChessWorker = new Worker('../src/flyworker.js');
+    var ChessWorker;
+    var PlayerForSide = {};
+    MakeBothPlayersHuman();
+    function MakeBothPlayersHuman() {
+        PlayerForSide[Flywheel.Side.White] = PlayerType.Human;
+        PlayerForSide[Flywheel.Side.Black] = PlayerType.Human;
+    }
     // The chess board stores the history, but we need to be able to redo
     // moves that have been undone.
     var GameHistory = [];
@@ -345,6 +357,7 @@ var FwDemo;
                 var div = document.getElementById(coords.source.selector);
                 AddClass(div, 'UserCanSelect');
             }
+            PlayStopState = PlayStopStateType.Play;
         }
         else if (state === MoveStateType.SelectDest) {
             for (var _a = 0, legal_2 = legal; _a < legal_2.length; _a++) {
@@ -357,8 +370,8 @@ var FwDemo;
             }
         }
         else if (state === MoveStateType.OpponentTurn) {
-            // Replace Play button with Stop button (revert to human player).
-            PlayStopState = PlayStopStateType.Stop;
+            // Replace Play button with Pause button (revert to human player).
+            PlayStopState = PlayStopStateType.Pause;
         }
         UpdatePlayControls();
     }
@@ -405,8 +418,19 @@ var FwDemo;
         var result = board.GetGameResult();
         DrawResultText(result);
         if (result.status === Flywheel.GameStatus.InProgress) {
-            // FIXFIXFIX - check for computer opponent
-            SetMoveState(MoveStateType.SelectSource);
+            if (PlayerForSide[board.SideToMove()] === PlayerType.Computer) {
+                SetMoveState(MoveStateType.OpponentTurn);
+                if (!ChessWorker) {
+                    ChessWorker = new Worker('../src/flyworker.js');
+                }
+                ChessWorker.onmessage = function (response) {
+                    CommitMove(response.data.bestMoveAlg);
+                };
+                ChessWorker.postMessage({ verb: 'Search', timeLimitInSeconds: 2, game: TheBoard.AlgHistory() });
+            }
+            else {
+                SetMoveState(MoveStateType.SelectSource);
+            }
         }
         else {
             // Game is over!
@@ -643,6 +667,13 @@ var FwDemo;
             }
         }
     }
+    function CancelComputerThinker() {
+        if (ChessWorker) {
+            ChessWorker.terminate();
+            ChessWorker = null;
+        }
+        MakeBothPlayersHuman();
+    }
     function InitControls() {
         BoardDiv.onmousedown = OnSquareMouseDown;
         BoardDiv.onmouseup = OnSquareMouseUp;
@@ -666,9 +697,8 @@ var FwDemo;
         };
         var prevTurnButton = document.getElementById('PrevTurnButton');
         prevTurnButton.onclick = function () {
-            // click
             if (PrevTurnEnabled) {
-                // TODO: Cancel any computer analysis here.
+                CancelComputerThinker();
                 TheBoard.PopMove();
                 --GameHistoryIndex;
                 DrawBoard(TheBoard);
@@ -684,6 +714,7 @@ var FwDemo;
         nextTurnButton.onclick = function () {
             // click
             if (NextTurnEnabled) {
+                CancelComputerThinker();
                 TheBoard.PushMove(GameHistory[GameHistoryIndex++]);
                 DrawBoard(TheBoard);
             }
@@ -697,11 +728,17 @@ var FwDemo;
         var playPauseStopButton = document.getElementById('PlayPauseStopButton');
         playPauseStopButton.onclick = function () {
             if (PlayStopEnabled) {
-                SetMoveState(MoveStateType.OpponentTurn);
-                ChessWorker.onmessage = function (response) {
-                    CommitMove(response.data.bestMoveAlg);
-                };
-                ChessWorker.postMessage({ verb: 'Search', timeLimitInSeconds: 2, game: TheBoard.AlgHistory() });
+                if (PlayStopState === PlayStopStateType.Play) {
+                    // Human's turn. Switch current player to Computer, opposite player to Human.
+                    PlayerForSide[TheBoard.SideToMove()] = PlayerType.Computer;
+                    PlayerForSide[Flywheel.OppositeSide(TheBoard.SideToMove())] = PlayerType.Human;
+                    DrawBoard(TheBoard);
+                }
+                else if (PlayStopState === PlayStopStateType.Pause) {
+                    // Computer is thinking. Abort thinking and set both players to Human.
+                    CancelComputerThinker();
+                    DrawBoard(TheBoard);
+                }
             }
         };
         playPauseStopButton.onmouseover = function () {

@@ -448,11 +448,15 @@ module Flywheel {
             return this.square[21 + x + (10*y)];
         }
 
-        public IsWhiteToMove(): boolean {
+        public SideToMove():Side {
+            return this.sideToMove;
+        }
+
+        public IsWhiteToMove():boolean {
             return this.sideToMove === Side.White;
         }
 
-        public IsBlackToMove(): boolean {
+        public IsBlackToMove():boolean {
             return this.sideToMove === Side.Black;
         }
 
