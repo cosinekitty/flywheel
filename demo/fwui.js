@@ -424,7 +424,7 @@ var FwDemo;
                     ChessWorker = new Worker('../src/flyworker.js');
                 }
                 ChessWorker.onmessage = function (response) {
-                    CommitMove(response.data.bestMoveAlg);
+                    AnimateMove(response.data.bestMoveAlg);
                 };
                 ChessWorker.postMessage({ verb: 'Search', timeLimitInSeconds: 2, game: TheBoard.AlgHistory() });
             }
@@ -436,6 +436,33 @@ var FwDemo;
             // Game is over!
             SetMoveState(MoveStateType.GameOver);
         }
+    }
+    function SquareCoords(algsquare) {
+        if (typeof algsquare !== 'string') {
+            throw 'Parameter "algsquare" must be a string.';
+        }
+        if (!/^[a-h][1-8]$/.test(algsquare)) {
+            throw "Invalid algebraic notation for a square: \"" + algsquare + "\"";
+        }
+        var chessX = 'abcdefgh'.indexOf(algsquare.charAt(0));
+        var chessY = '12345678'.indexOf(algsquare.charAt(1));
+        var screenX = RotateFlag ? (7 - chessX) : chessX;
+        var screenY = RotateFlag ? (7 - chessY) : chessY;
+        var selector = SquareSelector(screenX, screenY);
+        return {
+            screenX: screenX,
+            screenY: screenY,
+            chessX: chessX,
+            chessY: chessY,
+            selector: selector,
+            squareDiv: document.getElementById(selector),
+        };
+    }
+    function SourceDestCoords(algmove) {
+        return {
+            source: SquareCoords(algmove.substr(0, 2)),
+            dest: SquareCoords(algmove.substr(2, 2))
+        };
     }
     function BoardCoords(e) {
         var screenX = Math.floor((e.pageX - BoardDiv.offsetLeft) / SquarePixels);
@@ -477,15 +504,45 @@ var FwDemo;
             }
         }
     }
+    function AnimateMove(notation) {
+        // FIXFIXFIX: Lock controls while the piece is sliding across the board.
+        var coords = SourceDestCoords(notation);
+        var ldx = coords.dest.screenX - coords.source.screenX;
+        var ldy = coords.dest.screenY - coords.source.screenY;
+        var linearPixelDistance = Math.round(SquarePixels * Math.sqrt(ldx * ldx + ldy * ldy));
+        var pixelsPerFrame = 10;
+        var numFrames = Math.round(linearPixelDistance / pixelsPerFrame);
+        var frameCounter = 0;
+        var millisPerFrame = 20;
+        var image = coords.source.squareDiv.children[0];
+        image.style.position = 'absolute';
+        image.style.zIndex = '1';
+        var intervalId = window.setInterval(function () {
+            if (++frameCounter <= numFrames) {
+                var fraction = frameCounter / numFrames;
+                var px = Math.round(fraction * ldx * SquarePixels);
+                var py = -Math.round(fraction * ldy * SquarePixels);
+                image.style.left = px.toFixed() + 'px';
+                image.style.top = py.toFixed() + 'px';
+            }
+            else {
+                window.clearInterval(intervalId);
+                CommitMove(notation);
+            }
+        }, millisPerFrame);
+    }
     function CommitMove(move) {
         var notation;
         if (typeof move === 'string') {
             TheBoard.PushNotation(move);
             notation = move;
         }
-        else {
+        else if (move instanceof Flywheel.Move) {
             TheBoard.PushMove(move);
             notation = move.toString();
+        }
+        else {
+            throw 'Invalid type for "move" parameter';
         }
         if ((GameHistoryIndex < GameHistory.length) && (notation === GameHistory[GameHistoryIndex].toString())) {
             // Special case: treat this move as a redo, so don't disrupt the history.
