@@ -2,6 +2,8 @@
 
 Flywheel is a pure Javascript chess engine (still in development).
 
+Try out the [online demo](http://cosinekitty.com/chess/demo).
+
 ## Design goals
 
 * Computer plays chess with adjustable skill level.
