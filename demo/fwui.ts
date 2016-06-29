@@ -559,7 +559,7 @@ module FwDemo {
             if (++frameCounter <= numFrames) {
                 var fraction = frameCounter / numFrames;
                 var px = Math.round(fraction * ldx * SquarePixels);
-                var py = -Math.round(fraction * ldy * SquarePixels);
+                var py = -Math.round(fraction * ldy * SquarePixels);    // negative because y-coords grow downward
                 image.style.left = px.toFixed() + 'px';
                 image.style.top = py.toFixed() + 'px';
             } else {

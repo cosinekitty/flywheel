@@ -63,7 +63,13 @@ module Flywheel {
         Neither, White, Black
     }
 
-    var OppositeSide:Side[] = [Side.Neither, Side.Black, Side.White];
+    export function OppositeSide(side:Side):Side {
+        switch (side) {
+            case Side.White: return Side.Black;
+            case Side.Black: return Side.White;
+            default: throw new FlywheelError(`Invalid side ${side}`);
+        }
+    }
 
     class Utility {
         public static IsInitialized:boolean = Utility.StaticInit();
@@ -2042,6 +2048,17 @@ module Flywheel {
         private targetTimeInMillis:number = null;
         private timePollCounter:number = 0;
         private static readonly timePollLimit:number = 1;
+        private static baseTimeInMillis:number = null;
+
+        private static TimeInMillis():number {
+            // I wanted to use performance.now(), but doesn't work on Safari in a worker.
+            var millis = new Date().getTime();
+            if (Thinker.baseTimeInMillis === null) {
+                Thinker.baseTimeInMillis = millis;
+                return 0;
+            }
+            return millis - Thinker.baseTimeInMillis;
+        }
 
         private CheckSearchAborted(limit:number):void {
             if (limit <= 1) {
@@ -2057,7 +2074,7 @@ module Flywheel {
             if (this.targetTimeInMillis !== null) {
                 if (++this.timePollCounter >= Thinker.timePollLimit) {
                     this.timePollCounter = 0;
-                    var now = performance.now();
+                    var now = Thinker.TimeInMillis();
                     if (now >= this.targetTimeInMillis) {
                         throw new SearchAbortedException(`Search time limit exceeded at time ${now}; excess = ${now - this.targetTimeInMillis}`);
                     }
@@ -2071,7 +2088,7 @@ module Flywheel {
         }
 
         public SetTimeLimit(timeLimitInSeconds:number):void {
-            var now = performance.now();
+            var now = Thinker.TimeInMillis();
             this.ResetSearchLimit();
             this.targetTimeInMillis = now + (1000 * timeLimitInSeconds);
             //console.log(`SetTimeLimit called at ${now}, target = ${this.targetTimeInMillis}`);

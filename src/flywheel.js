@@ -1958,6 +1958,15 @@ var Flywheel;
             this.targetTimeInMillis = null;
             this.timePollCounter = 0;
         }
+        Thinker.TimeInMillis = function () {
+            // I wanted to use performance.now(), but doesn't work on Safari in a worker.
+            var millis = new Date().getTime();
+            if (Thinker.baseTimeInMillis === null) {
+                Thinker.baseTimeInMillis = millis;
+                return 0;
+            }
+            return millis - Thinker.baseTimeInMillis;
+        };
         Thinker.prototype.CheckSearchAborted = function (limit) {
             if (limit <= 1) {
                 return; // Never abort a search that has not completed first level!
@@ -1970,7 +1979,7 @@ var Flywheel;
             if (this.targetTimeInMillis !== null) {
                 if (++this.timePollCounter >= Thinker.timePollLimit) {
                     this.timePollCounter = 0;
-                    var now = performance.now();
+                    var now = Thinker.TimeInMillis();
                     if (now >= this.targetTimeInMillis) {
                         throw new SearchAbortedException("Search time limit exceeded at time " + now + "; excess = " + (now - this.targetTimeInMillis));
                     }
@@ -1982,7 +1991,7 @@ var Flywheel;
             this.maxSearchLimit = maxLimit;
         };
         Thinker.prototype.SetTimeLimit = function (timeLimitInSeconds) {
-            var now = performance.now();
+            var now = Thinker.TimeInMillis();
             this.ResetSearchLimit();
             this.targetTimeInMillis = now + (1000 * timeLimitInSeconds);
             //console.log(`SetTimeLimit called at ${now}, target = ${this.targetTimeInMillis}`);
@@ -2110,6 +2119,7 @@ var Flywheel;
             return bestScore;
         };
         Thinker.timePollLimit = 1;
+        Thinker.baseTimeInMillis = null;
         return Thinker;
     }());
     Flywheel.Thinker = Thinker;
