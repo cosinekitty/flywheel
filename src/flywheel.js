@@ -2007,7 +2007,7 @@ var Flywheel;
             for (var limit = 1; searching; ++limit) {
                 try {
                     var nextBestPath = new BestPath();
-                    nextBestPath.score = this.InternalMateSearch(board, limit, 0, nextBestPath, Score.NegInf, Score.PosInf);
+                    nextBestPath.score = this.InternalSearch(board, limit, 0, nextBestPath, Score.NegInf, Score.PosInf);
                     bestPath = nextBestPath; // search was not yet aborted via exception, so update best path
                     if (bestPath.score >= Score.ForcedWin) {
                         break;
@@ -2025,32 +2025,7 @@ var Flywheel;
             bestPath.nodes = this.nodesVisitedCounter;
             return bestPath;
         };
-        Thinker.prototype.MateSearch = function (board) {
-            // Search for a forced checkmate.
-            var bestPath = null;
-            var searching = true;
-            for (var limit = 1; searching; ++limit) {
-                try {
-                    var nextBestPath = new BestPath();
-                    nextBestPath.score = this.InternalMateSearch(board, limit, 0, nextBestPath, Score.NegInf, Score.PosInf);
-                    bestPath = nextBestPath; // search was not yet aborted via exception, so update best path
-                    if (bestPath.score >= Score.ForcedWin) {
-                        break;
-                    }
-                }
-                catch (ex) {
-                    if (ex instanceof SearchAbortedException) {
-                        searching = false; // This is not an error; it is the normal way a search is terminated.
-                    }
-                    else {
-                        throw ex; // This really is an error, so bubble the exception up!
-                    }
-                }
-            }
-            bestPath.nodes = this.nodesVisitedCounter;
-            return bestPath;
-        };
-        Thinker.MateSearchMoveRater = function (board, move) {
+        Thinker.MoveRater = function (board, move) {
             if (board.IsCurrentPlayerInCheck()) {
                 if (!board.CurrentPlayerCanMove()) {
                     // Put moves that cause checkmate to the very front.
@@ -2061,7 +2036,7 @@ var Flywheel;
             }
             return 0;
         };
-        Thinker.prototype.InternalMateSearch = function (board, limit, depth, bestPath, alpha, beta) {
+        Thinker.prototype.InternalSearch = function (board, limit, depth, bestPath, alpha, beta) {
             this.CheckSearchAborted(limit);
             ++this.nodesVisitedCounter;
             bestPath.Truncate();
@@ -2073,7 +2048,7 @@ var Flywheel;
                 }
                 return Score.Draw;
             }
-            var legal = board.LegalMoves(Thinker.MateSearchMoveRater);
+            var legal = board.LegalMoves(Thinker.MoveRater);
             if (legal.length === 0) {
                 // Either checkmate or stalemate, depending on whether the current player is in check.
                 // Postponement adjustment:
@@ -2096,7 +2071,7 @@ var Flywheel;
                 board.PushMove(move);
                 // Tricky: we negate the return value, flip and negate the alpha-beta window.
                 // This is a "negamax" search -- whatever is good for one player is bad for the other.
-                var score = -this.InternalMateSearch(board, limit, 1 + depth, currPath, -beta, -alpha);
+                var score = -this.InternalSearch(board, limit, 1 + depth, currPath, -beta, -alpha);
                 board.PopMove();
                 if (score > bestScore) {
                     bestScore = score;

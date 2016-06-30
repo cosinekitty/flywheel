@@ -51,7 +51,7 @@ module FlyWorker {
             board.PushHistory(data.game);
             let thinker:Flywheel.Thinker = new Flywheel.Thinker();
             thinker.SetMaxSearchLimit(data.limit);
-            let bestPath:Flywheel.BestPath = thinker.MateSearch(board);
+            let bestPath:Flywheel.BestPath = thinker.Search(board);
             return Adapter.MakeSearchResponse(data, bestPath);
         }
 

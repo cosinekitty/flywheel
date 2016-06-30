@@ -2106,7 +2106,7 @@ module Flywheel {
             for (var limit=1; searching; ++limit) {
                 try {
                     var nextBestPath:BestPath = new BestPath();
-                    nextBestPath.score = this.InternalMateSearch(board, limit, 0, nextBestPath, Score.NegInf, Score.PosInf);
+                    nextBestPath.score = this.InternalSearch(board, limit, 0, nextBestPath, Score.NegInf, Score.PosInf);
                     bestPath = nextBestPath;    // search was not yet aborted via exception, so update best path
                     if (bestPath.score >= Score.ForcedWin) {
                         break;
@@ -2123,31 +2123,7 @@ module Flywheel {
             return bestPath;
         }
 
-        public MateSearch(board:Board): BestPath {
-            // Search for a forced checkmate.
-            var bestPath:BestPath = null;
-            var searching = true;
-            for (var limit=1; searching; ++limit) {
-                try {
-                    var nextBestPath:BestPath = new BestPath();
-                    nextBestPath.score = this.InternalMateSearch(board, limit, 0, nextBestPath, Score.NegInf, Score.PosInf);
-                    bestPath = nextBestPath;    // search was not yet aborted via exception, so update best path
-                    if (bestPath.score >= Score.ForcedWin) {
-                        break;
-                    }
-                } catch (ex) {
-                    if (ex instanceof SearchAbortedException) {
-                        searching = false;  // This is not an error; it is the normal way a search is terminated.
-                    } else {
-                        throw ex;   // This really is an error, so bubble the exception up!
-                    }
-                }
-            }
-            bestPath.nodes = this.nodesVisitedCounter;
-            return bestPath;
-        }
-
-        private static MateSearchMoveRater(board:Board, move:Move):Score {
+        private static MoveRater(board:Board, move:Move):Score {
             if (board.IsCurrentPlayerInCheck()) {
                 if (!board.CurrentPlayerCanMove()) {
                     // Put moves that cause checkmate to the very front.
@@ -2159,7 +2135,7 @@ module Flywheel {
             return 0;
         }
 
-        private InternalMateSearch(
+        private InternalSearch(
             board:Board,
             limit:number,
             depth:number,
@@ -2182,7 +2158,7 @@ module Flywheel {
                 return Score.Draw;
             }
 
-            let legal:Move[] = board.LegalMoves(Thinker.MateSearchMoveRater);
+            let legal:Move[] = board.LegalMoves(Thinker.MoveRater);
             if (legal.length === 0) {
                 // Either checkmate or stalemate, depending on whether the current player is in check.
                 // Postponement adjustment:
@@ -2207,7 +2183,7 @@ module Flywheel {
                 board.PushMove(move);
                 // Tricky: we negate the return value, flip and negate the alpha-beta window.
                 // This is a "negamax" search -- whatever is good for one player is bad for the other.
-                let score:Score = -this.InternalMateSearch(board, limit, 1+depth, currPath, -beta, -alpha);
+                let score:Score = -this.InternalSearch(board, limit, 1+depth, currPath, -beta, -alpha);
                 board.PopMove();
 
                 if (score > bestScore) {

@@ -50,7 +50,7 @@ var FlyWorker;
             board.PushHistory(data.game);
             var thinker = new Flywheel.Thinker();
             thinker.SetMaxSearchLimit(data.limit);
-            var bestPath = thinker.MateSearch(board);
+            var bestPath = thinker.Search(board);
             return Adapter.MakeSearchResponse(data, bestPath);
         };
         Adapter.Search = function (data) {
