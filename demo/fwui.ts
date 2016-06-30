@@ -443,14 +443,16 @@ module FwDemo {
 
         if (result.status === Flywheel.GameStatus.InProgress) {
             if (PlayerForSide[board.SideToMove()] === PlayerType.Computer) {
-                SetMoveState(MoveStateType.OpponentTurn);
-                if (!ChessWorker) {
-                    ChessWorker = new Worker('../src/flyworker.js');
+                if (MoveState !== MoveStateType.OpponentTurn) {
+                    SetMoveState(MoveStateType.OpponentTurn);
+                    if (!ChessWorker) {
+                        ChessWorker = new Worker('../src/flyworker.js');
+                    }
+                    ChessWorker.onmessage = function(response) {
+                        AnimateMove(response.data.bestMoveAlg);
+                    }
+                    ChessWorker.postMessage({verb:'Search', timeLimitInSeconds:2, game:TheBoard.AlgHistory()});
                 }
-                ChessWorker.onmessage = function(response) {
-                    AnimateMove(response.data.bestMoveAlg);
-                }
-                ChessWorker.postMessage({verb:'Search', timeLimitInSeconds:2, game:TheBoard.AlgHistory()});
             } else {
                 SetMoveState(MoveStateType.SelectSource);
             }
