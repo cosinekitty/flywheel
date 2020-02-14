@@ -24,39 +24,49 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 */
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 var Flywheel;
 (function (Flywheel) {
-    var FlyException = (function (_super) {
+    var FlyException = /** @class */ (function (_super) {
         __extends(FlyException, _super);
         // http://stackoverflow.com/questions/12915412/how-do-i-extend-a-host-object-e-g-error-in-typescript
         // https://github.com/Microsoft/TypeScript/issues/1168
         function FlyException(message, name) {
-            _super.call(this);
-            this.message = message;
-            this.name = name;
-            this.stack = (new Error()).stack;
+            var _this = _super.call(this) || this;
+            _this.message = message;
+            _this.name = name;
+            _this.stack = new Error().stack;
+            return _this;
         }
         return FlyException;
     }(Error));
-    var FlywheelError = (function (_super) {
+    var FlywheelError = /** @class */ (function (_super) {
         __extends(FlywheelError, _super);
         function FlywheelError(message) {
-            _super.call(this, message, 'FlywheelError');
+            return _super.call(this, message, 'FlywheelError') || this;
         }
         return FlywheelError;
     }(FlyException));
-    var SearchAbortedException = (function (_super) {
+    var SearchAbortedException = /** @class */ (function (_super) {
         __extends(SearchAbortedException, _super);
         function SearchAbortedException(message) {
-            _super.call(this, message, 'SearchAbortedException');
+            return _super.call(this, message, 'SearchAbortedException') || this;
         }
         return SearchAbortedException;
     }(FlyException));
+    var Square;
     (function (Square) {
         Square[Square["Empty"] = 0] = "Empty";
         Square[Square["WhitePawn"] = 1] = "WhitePawn";
@@ -72,8 +82,8 @@ var Flywheel;
         Square[Square["BlackQueen"] = 11] = "BlackQueen";
         Square[Square["BlackKing"] = 12] = "BlackKing";
         Square[Square["OffBoard"] = 13] = "OffBoard";
-    })(Flywheel.Square || (Flywheel.Square = {}));
-    var Square = Flywheel.Square;
+    })(Square = Flywheel.Square || (Flywheel.Square = {}));
+    var NeutralPiece;
     (function (NeutralPiece) {
         NeutralPiece[NeutralPiece["Empty"] = 0] = "Empty";
         NeutralPiece[NeutralPiece["Pawn"] = 1] = "Pawn";
@@ -82,14 +92,13 @@ var Flywheel;
         NeutralPiece[NeutralPiece["Rook"] = 4] = "Rook";
         NeutralPiece[NeutralPiece["Queen"] = 5] = "Queen";
         NeutralPiece[NeutralPiece["King"] = 6] = "King";
-    })(Flywheel.NeutralPiece || (Flywheel.NeutralPiece = {}));
-    var NeutralPiece = Flywheel.NeutralPiece;
+    })(NeutralPiece = Flywheel.NeutralPiece || (Flywheel.NeutralPiece = {}));
+    var Side;
     (function (Side) {
         Side[Side["Neither"] = 0] = "Neither";
         Side[Side["White"] = 1] = "White";
         Side[Side["Black"] = 2] = "Black";
-    })(Flywheel.Side || (Flywheel.Side = {}));
-    var Side = Flywheel.Side;
+    })(Side = Flywheel.Side || (Flywheel.Side = {}));
     function OppositeSide(side) {
         switch (side) {
             case Side.White: return Side.Black;
@@ -98,7 +107,7 @@ var Flywheel;
         }
     }
     Flywheel.OppositeSide = OppositeSide;
-    var Utility = (function () {
+    var Utility = /** @class */ (function () {
         function Utility() {
         }
         Utility.StaticInit = function () {
@@ -169,6 +178,7 @@ var Flywheel;
         Utility.IsInitialized = Utility.StaticInit();
         return Utility;
     }());
+    var Score;
     (function (Score) {
         Score[Score["Draw"] = 0] = "Draw";
         Score[Score["Invalid"] = -2100000000] = "Invalid";
@@ -178,9 +188,8 @@ var Flywheel;
         Score[Score["CheckmateWin"] = 1100000000] = "CheckmateWin";
         Score[Score["ForcedLoss"] = -1000000000] = "ForcedLoss";
         Score[Score["ForcedWin"] = 1000000000] = "ForcedWin";
-    })(Flywheel.Score || (Flywheel.Score = {}));
-    var Score = Flywheel.Score;
-    var Move = (function () {
+    })(Score = Flywheel.Score || (Flywheel.Score = {}));
+    var Move = /** @class */ (function () {
         function Move(source, dest, prom, score, hash_a) {
             if (prom === void 0) { prom = NeutralPiece.Empty; }
             this.source = source;
@@ -218,7 +227,7 @@ var Flywheel;
         return Move;
     }());
     Flywheel.Move = Move;
-    var HashValue = (function () {
+    var HashValue = /** @class */ (function () {
         function HashValue(a, b, c) {
             this.a = a;
             this.b = b;
@@ -232,7 +241,7 @@ var Flywheel;
         };
         return HashValue;
     }());
-    var MoveState = (function () {
+    var MoveState = /** @class */ (function () {
         function MoveState() {
         }
         return MoveState;
@@ -283,21 +292,21 @@ var Flywheel;
         Direction[Direction["Knight7"] = -19] = "Knight7";
         Direction[Direction["Knight8"] = -8] = "Knight8";
     })(Direction || (Direction = {}));
+    var GameStatus;
     (function (GameStatus) {
         GameStatus[GameStatus["InProgress"] = 0] = "InProgress";
         GameStatus[GameStatus["Draw"] = 1] = "Draw";
         GameStatus[GameStatus["WhiteWins"] = 2] = "WhiteWins";
         GameStatus[GameStatus["BlackWins"] = 3] = "BlackWins";
-    })(Flywheel.GameStatus || (Flywheel.GameStatus = {}));
-    var GameStatus = Flywheel.GameStatus;
+    })(GameStatus = Flywheel.GameStatus || (Flywheel.GameStatus = {}));
+    var DrawType;
     (function (DrawType) {
         DrawType[DrawType["Stalemate"] = 0] = "Stalemate";
         DrawType[DrawType["InsufficientMaterial"] = 1] = "InsufficientMaterial";
         DrawType[DrawType["ThreefoldRepetition"] = 2] = "ThreefoldRepetition";
         DrawType[DrawType["FiftyMoveRule"] = 3] = "FiftyMoveRule";
-    })(Flywheel.DrawType || (Flywheel.DrawType = {}));
-    var DrawType = Flywheel.DrawType;
-    var GameResult = (function () {
+    })(DrawType = Flywheel.DrawType || (Flywheel.DrawType = {}));
+    var GameResult = /** @class */ (function () {
         function GameResult(status, drawType) {
             this.status = status;
             this.drawType = drawType;
@@ -305,7 +314,7 @@ var Flywheel;
         return GameResult;
     }());
     Flywheel.GameResult = GameResult;
-    var Board = (function () {
+    var Board = /** @class */ (function () {
         function Board(fen) {
             if (fen === void 0) { fen = null; }
             this.debugMode = false;
@@ -790,7 +799,7 @@ var Flywheel;
             }
             // Getting here means we could not find algebraic match.
             // Look for PGN match, a more costly operation.
-            if (notation.length >= 2 && notation.length <= 7) {
+            if (notation.length >= 2 && notation.length <= 7) { // PGN notation is always 2..7 characters
                 for (var _a = 0, legal_2 = legal; _a < legal_2.length; _a++) {
                     var move = legal_2[_a];
                     var pgn = Board.FilterCheckSuffix(this.PgnFormat(move, legal));
@@ -1431,7 +1440,8 @@ var Flywheel;
             var inventory = [
                 0,
                 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0]; // Black P N B R Q K
+                0, 0, 0, 0, 0, 0
+            ]; // Black P N B R Q K
             for (var _i = 0, _a = Board.ValidOffsetList; _i < _a.length; _i++) {
                 var ofs = _a[_i];
                 var s = this.square[ofs];
@@ -1930,7 +1940,7 @@ var Flywheel;
     }());
     Flywheel.Board = Board;
     //-------------------------------------------------------------------------------------------------------
-    var BestPath = (function () {
+    var BestPath = /** @class */ (function () {
         function BestPath() {
             this.move = [];
             this.score = Score.NegInf;
@@ -1951,7 +1961,7 @@ var Flywheel;
         return BestPath;
     }());
     Flywheel.BestPath = BestPath;
-    var Thinker = (function () {
+    var Thinker = /** @class */ (function () {
         function Thinker() {
             this.nodesVisitedCounter = 0;
             this.maxSearchLimit = null;
@@ -2446,4 +2456,5 @@ var Flywheel;
             ,
             [0x5bc2e69c, 0x12f33fc9, 0x4188b799], [0x06df0a17, 0x94c0b1cb, 0x35162120], [0xa9f9654c, 0x9b8c5813, 0xb228a184], [0x8a722a51, 0x71f16c13, 0x0c9ded30], [0x1cd1107c, 0xcdd12672, 0xe207ed90], [0xcf71e527, 0x7aa05aa4, 0x683d95b0]] //    B
     ];
+    //=====END HASH SALT=====
 })(Flywheel || (Flywheel = {}));

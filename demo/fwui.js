@@ -495,7 +495,7 @@ var FwDemo;
         RemoveClass(this, 'ChessSquareHover');
     }
     function OnSquareMouseDown(e) {
-        if (e.which === 1) {
+        if (e.which === 1) { // primary mouse button
             if (MoveState === MoveStateType.SelectSource) {
                 var bc = BoardCoords(e);
                 if (bc) {
@@ -674,7 +674,7 @@ var FwDemo;
         return div;
     }
     function OnSquareMouseUp(e) {
-        if (e.which === 1) {
+        if (e.which === 1) { // primary mouse button
             var bc = BoardCoords(e);
             if (bc) {
                 if (MoveState === MoveStateType.SelectDest) {
