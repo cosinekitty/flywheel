@@ -33,9 +33,9 @@ module FwDemo {
     var NextTurnEnabled:boolean = false;
     var PlayStopEnabled:boolean = true;
     var PlayStopState:PlayStopStateType = PlayStopStateType.Play;
-    var BoardDiv;
-    var ResultTextDiv;
-    var ChessWorker;
+    var BoardDiv: HTMLElement;
+    var ResultTextDiv: HTMLElement;
+    var ChessWorker: Worker;
     var PlayerForSide:{[side:number]:PlayerType} = {};
     MakeBothPlayersHuman();
 
